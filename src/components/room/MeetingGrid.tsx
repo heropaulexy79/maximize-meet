@@ -56,24 +56,26 @@ function ParticipantOverlay({ participant }: { participant: Participant }) {
   const isHandRaised = metadata.handRaised;
 
   return (
-    <div className="absolute inset-0 pointer-events-none z-10 p-4">
-      <AnimatePresence>
-        {isHandRaised && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="absolute top-4 left-4 w-10 h-10 rounded-full bg-amber-500 text-black flex items-center justify-center shadow-lg shadow-amber-500/20"
-          >
-            <Hand className="w-5 h-5 fill-current" />
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="absolute inset-0 z-30 p-3 flex flex-col justify-between pointer-events-none">
+      <div className="flex justify-between items-start w-full">
+        <AnimatePresence>
+          {isHandRaised && (
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              className="w-10 h-10 rounded-full bg-amber-500 text-black flex items-center justify-center shadow-lg shadow-amber-500/20"
+            >
+              <Hand className="w-5 h-5 fill-current" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       
-      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end pointer-events-none">
-        <div className="px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-[11px] text-white font-bold shadow-xl flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${participant.isLocal ? 'bg-primary' : 'bg-green-500'}`} />
-          <span className="truncate max-w-[120px]">
+      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end pointer-events-none z-50">
+        <div className="px-3 py-1.5 rounded-xl bg-black/70 backdrop-blur-2xl border border-white/20 text-[11px] text-white font-bold shadow-2xl flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${participant.isLocal ? 'bg-primary animate-pulse' : 'bg-green-500'}`} />
+          <span className="truncate max-w-[150px] drop-shadow-md">
             {participant.name || participant.identity}
             {participant.isLocal && " (You)"}
           </span>
