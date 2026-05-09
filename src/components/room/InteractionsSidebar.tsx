@@ -43,7 +43,7 @@ export function InteractionsSidebar({
     if (!room) return;
 
     const handleData = (payload: Uint8Array, participant?: any) => {
-      const decoder = new TextEncoder();
+      const decoder = new TextDecoder();
       try {
         const data = JSON.parse(decoder.decode(payload));
         if (data.type === "new-poll") {
