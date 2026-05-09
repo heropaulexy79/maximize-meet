@@ -469,35 +469,122 @@ export default function RoomPage() {
     }
   };
 
+  const [guestName, setGuestName] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
+
   useEffect(() => {
-    if (!user) return;
-    (async () => {
-      try {
-        const idToken = await user.getIdToken();
-        const resp = await fetch(
-          `/api/livekit?room=${roomId}&username=${user.displayName || user.email}`,
-          {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-          }
-        );
-        const data = await resp.json();
-        
-        if (data.error) {
-          toast.error(data.error);
-          return;
+    // Only auto-authenticate if the user is already logged in
+    if (user && token === "") {
+      (async () => {
+        try {
+          const idToken = await user.getIdToken();
+          const resp = await fetch(
+            `/api/livekit?room=${roomId}&username=${user.displayName || user.email}`,
+            {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+              },
+            }
+          );
+          const data = await resp.json();
+          if (data.token) setToken(data.token);
+        } catch (e) {
+          console.error(e);
+          toast.error("Failed to authenticate session");
         }
-        
+      })();
+    }
+  }, [roomId, user, token]);
+
+  const handleGuestJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guestName.trim()) {
+      toast.error("Please enter your name to join");
+      return;
+    }
+
+    setIsJoining(true);
+    try {
+      const resp = await fetch(
+        `/api/livekit?room=${roomId}&username=${encodeURIComponent(guestName)}`
+      );
+      const data = await resp.json();
+      if (data.token) {
         setToken(data.token);
-      } catch (e) {
-        console.error(e);
-        toast.error("Failed to authenticate session");
+        toast.success(`Welcome to the room, ${guestName}!`);
+      } else {
+        toast.error(data.error || "Failed to join room");
       }
-    })();
-  }, [roomId, user]);
+    } catch (e) {
+      toast.error("Connection failed");
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   if (token === "") {
+    // If not logged in and no token yet, show Guest Join UI
+    if (!user) {
+      return (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 relative overflow-hidden">
+          {/* Background Gradients */}
+          <div className="absolute inset-0 z-0">
+            <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 blur-[120px] rounded-full" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-primary/10 blur-[120px] rounded-full" />
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md z-10"
+          >
+            <Card className="bg-white/[0.02] border-white/10 backdrop-blur-3xl rounded-[2.5rem] p-10 overflow-hidden shadow-2xl">
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 rounded-3xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/30">
+                  <Video className="w-10 h-10 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-outfit font-bold text-white mb-2">Join Leadership Session</h2>
+                  <p className="text-muted-foreground">Enter your name to step into the room.</p>
+                </div>
+
+                <form onSubmit={handleGuestJoin} className="w-full space-y-4">
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Input 
+                      placeholder="Your Full Name"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      className="h-14 pl-12 rounded-2xl bg-white/[0.05] border-white/10 text-white text-lg focus:border-primary/50 transition-all"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    disabled={isJoining}
+                    className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-lg shadow-xl shadow-primary/20 transition-all"
+                  >
+                    {isJoining ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                        Joining...
+                      </div>
+                    ) : "Enter Room"}
+                  </Button>
+                </form>
+
+                <div className="pt-4 border-t border-white/5 w-full">
+                  <p className="text-xs text-muted-foreground">
+                    By joining, you agree to the academy's code of conduct.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      );
+    }
+
+    // If logged in but still authenticating
     return (
       <div className="min-h-screen bg-black flex flex-col items-center justify-center space-y-6">
         <motion.div
