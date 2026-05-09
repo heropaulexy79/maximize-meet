@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   LiveKitRoom,
-  VideoConference,
   RoomAudioRenderer,
   TrackToggle,
   useLocalParticipant,
@@ -12,7 +11,7 @@ import "@livekit/components-styles";
 import { Track } from "livekit-client";
 import { useAuth } from "@/context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic,
   MicOff,
@@ -33,6 +32,13 @@ import {
   Link2,
   CircleDot,
   CircleStop,
+  Hand,
+  LayoutGrid,
+  Square,
+  Captions,
+  HelpCircle,
+  Plus,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +64,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ParticipantsSidebar } from "@/components/room/ParticipantsSidebar";
+import { ChatSidebar } from "@/components/room/ChatSidebar";
+import { InteractionsSidebar } from "@/components/room/InteractionsSidebar";
+import { MeetingGrid } from "@/components/room/MeetingGrid";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
@@ -254,22 +263,98 @@ function InviteDialog({
 }
 
 // ─── Control Dock ─────────────────────────────────────────────────────────────
+import { 
+  Smile,
+  Heart,
+  ThumbsUp,
+  Clap,
+  PartyPopper,
+  Laugh,
+  Surprise,
+} from "lucide-react";
+import { useRoomContext } from "@livekit/components-react";
+
+const REACTIONS = [
+  { emoji: "💖", label: "love", icon: Heart },
+  { emoji: "👍", label: "up", icon: ThumbsUp },
+  { emoji: "👏", label: "clap", icon: Clap },
+  { emoji: "🎉", label: "party", icon: PartyPopper },
+  { emoji: "😂", label: "laugh", icon: Laugh },
+  { emoji: "😮", label: "wow", icon: Surprise },
+];
+
 function CustomControlDock({
   isRecording,
   onStartRecording,
   onStopRecording,
+  setInviteOpen,
+  setParticipantsSidebarOpen,
+  participantsSidebarOpen,
+  chatOpen,
+  setChatOpen,
+  isHandRaised,
+  toggleHand,
+  layout,
+  setLayout,
+  showCaptions,
+  setShowCaptions,
+  interactionsOpen,
+  setInteractionsOpen,
+  isBlurred,
+  setIsBlurred,
 }: {
   isRecording: boolean;
   onStartRecording: () => void;
   onStopRecording: () => void;
+  setInviteOpen: (open: boolean) => void;
+  setParticipantsSidebarOpen: (open: boolean) => void;
+  participantsSidebarOpen: boolean;
+  chatOpen: boolean;
+  setChatOpen: (open: boolean) => void;
+  isHandRaised: boolean;
+  toggleHand: () => void;
+  layout: "tiled" | "spotlight" | "sidebar";
+  setLayout: (l: "tiled" | "spotlight" | "sidebar") => void;
+  showCaptions: boolean;
+  setShowCaptions: (s: boolean) => void;
+  interactionsOpen: boolean;
+  setInteractionsOpen: (open: boolean) => void;
+  isBlurred: boolean;
+  setIsBlurred: (b: boolean) => void;
 }) {
   const router = useRouter();
+  const room = useRoomContext();
+  const { roomId } = useParams();
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
     useLocalParticipant();
+  const [showReactions, setShowReactions] = useState(false);
+  const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+
+  const sendReaction = async (emoji: string) => {
+    if (!room) return;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(JSON.stringify({ type: "reaction", emoji }));
+    await room.localParticipant.publishData(data, { reliable: true });
+    setShowReactions(false);
+    // Also show locally
+    window.dispatchEvent(new CustomEvent("local-reaction", { detail: { emoji } }));
+  };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 z-50 p-8 flex items-center justify-center pointer-events-none">
-      <div className="flex items-center gap-4 p-4 rounded-[2.5rem] bg-black/60 backdrop-blur-3xl border border-white/10 shadow-2xl pointer-events-auto">
+    <div className="relative z-50 px-8 flex items-center justify-between bg-[#050505] border-t border-white/5 h-24 w-full">
+      {/* Left side info (Time) */}
+      <div className="flex items-center gap-4 w-1/4">
+        <div className="text-white font-mono text-sm tracking-widest opacity-60">
+          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        </div>
+        <div className="h-4 w-px bg-white/10" />
+        <div className="text-white/60 text-sm font-outfit font-medium truncate">
+          Leadership Room
+        </div>
+      </div>
+
+      {/* Center Controls */}
+      <div className="flex items-center gap-3">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
@@ -277,16 +362,16 @@ function CustomControlDock({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`w-14 h-14 rounded-full transition-all ${
+                  className={`w-12 h-12 rounded-full transition-all border ${
                     !isMicrophoneEnabled
-                      ? "bg-red-500/20 text-red-500 hover:bg-red-500/30"
-                      : "bg-white/5 hover:bg-white/10 text-white"
+                      ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
+                      : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                   }`}
                 >
                   {isMicrophoneEnabled ? (
-                    <Mic className="w-6 h-6" />
+                    <Mic className="w-5 h-5" />
                   ) : (
-                    <MicOff className="w-6 h-6" />
+                    <MicOff className="w-5 h-5" />
                   )}
                 </Button>
               </TrackToggle>
@@ -304,16 +389,16 @@ function CustomControlDock({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`w-14 h-14 rounded-full transition-all ${
+                  className={`w-12 h-12 rounded-full transition-all border ${
                     !isCameraEnabled
-                      ? "bg-red-500/20 text-red-500 hover:bg-red-500/30"
-                      : "bg-white/5 hover:bg-white/10 text-white"
+                      ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
+                      : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                   }`}
                 >
                   {isCameraEnabled ? (
-                    <Video className="w-6 h-6" />
+                    <Video className="w-5 h-5" />
                   ) : (
-                    <VideoOff className="w-6 h-6" />
+                    <VideoOff className="w-5 h-5" />
                   )}
                 </Button>
               </TrackToggle>
@@ -324,7 +409,81 @@ function CustomControlDock({
           </Tooltip>
         </TooltipProvider>
 
-        <div className="h-10 w-px bg-white/10 mx-2" />
+        {/* Background Blur */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsBlurred(!isBlurred)}
+                className={`w-12 h-12 rounded-full transition-all border ${
+                  isBlurred ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                }`}
+              >
+                <Sparkles className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Blur Background</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* Raise Hand */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleHand}
+                className={`w-12 h-12 rounded-full transition-all border ${
+                  isHandRaised ? "bg-amber-500 border-amber-500 text-black hover:bg-amber-600" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                }`}
+              >
+                <Hand className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Raise Hand</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* Reaction Picker Trigger */}
+        <div className="relative">
+          {showReactions && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 bg-zinc-900/90 border border-white/10 backdrop-blur-xl rounded-2xl flex gap-2 shadow-2xl z-50"
+            >
+              {REACTIONS.map((r) => (
+                <button
+                  key={r.label}
+                  onClick={() => sendReaction(r.emoji)}
+                  className="w-10 h-10 flex items-center justify-center text-xl hover:bg-white/10 rounded-xl transition-colors"
+                >
+                  {r.emoji}
+                </button>
+              ))}
+            </motion.div>
+          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowReactions(!showReactions)}
+                  className={`w-12 h-12 rounded-full transition-all border ${
+                    showReactions ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                  }`}
+                >
+                  <Smile className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Send Reaction</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
 
         <TooltipProvider>
           <Tooltip>
@@ -333,17 +492,77 @@ function CustomControlDock({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`w-14 h-14 rounded-full transition-all ${
+                  className={`w-12 h-12 rounded-full transition-all border ${
                     isScreenShareEnabled
-                      ? "bg-primary/20 text-primary hover:bg-primary/30"
-                      : "bg-white/5 hover:bg-white/10 text-white"
+                      ? "bg-primary/20 border-primary text-primary hover:bg-primary/30"
+                      : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                   }`}
                 >
-                  <MonitorUp className="w-6 h-6" />
+                  <MonitorUp className="w-5 h-5" />
                 </Button>
               </TrackToggle>
             </TooltipTrigger>
             <TooltipContent>Share Screen</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        {/* Layout Switcher */}
+        <div className="relative">
+          {showLayoutMenu && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-1.5 bg-zinc-900/95 border border-white/10 backdrop-blur-xl rounded-2xl flex flex-col gap-1 shadow-2xl z-50 min-w-[140px]"
+            >
+              <button 
+                onClick={() => { setLayout("tiled"); setShowLayoutMenu(false); }}
+                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all ${layout === 'tiled' ? 'bg-primary/20 text-primary' : 'text-white/70 hover:bg-white/5'}`}
+              >
+                <LayoutGrid className="w-4 h-4" /> Tiled View
+              </button>
+              <button 
+                onClick={() => { setLayout("spotlight"); setShowLayoutMenu(false); }}
+                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all ${layout === 'spotlight' ? 'bg-primary/20 text-primary' : 'text-white/70 hover:bg-white/5'}`}
+              >
+                <Square className="w-4 h-4" /> Spotlight
+              </button>
+            </motion.div>
+          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowLayoutMenu(!showLayoutMenu)}
+                  className={`w-12 h-12 rounded-full transition-all border ${
+                    showLayoutMenu ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                  }`}
+                >
+                  <LayoutGrid className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Change Layout</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+
+        {/* CC Button */}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowCaptions(!showCaptions)}
+                className={`w-12 h-12 rounded-full transition-all border ${
+                  showCaptions ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                }`}
+              >
+                <Captions className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Turn on Captions</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
@@ -355,16 +574,16 @@ function CustomControlDock({
                 variant="ghost"
                 size="icon"
                 onClick={isRecording ? onStopRecording : onStartRecording}
-                className={`w-14 h-14 rounded-full transition-all ${
+                className={`w-12 h-12 rounded-full transition-all border ${
                   isRecording
-                    ? "bg-red-500/20 text-red-400 hover:bg-red-500/30 animate-pulse"
-                    : "bg-white/5 hover:bg-white/10 text-white"
+                    ? "bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30 animate-pulse"
+                    : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                 }`}
               >
                 {isRecording ? (
-                  <CircleStop className="w-6 h-6" />
+                  <CircleStop className="w-5 h-5" />
                 ) : (
-                  <CircleDot className="w-6 h-6" />
+                  <CircleDot className="w-5 h-5" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -380,12 +599,47 @@ function CustomControlDock({
               <Button
                 variant="ghost"
                 size="icon"
-                className="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all"
+                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
               >
-                <Maximize2 className="w-6 h-6" />
+                <Settings className="w-5 h-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Fullscreen</TooltipContent>
+            <TooltipContent>Settings</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <div className="mx-2" />
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                onClick={() => router.push("/dashboard")}
+                className="w-16 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg shadow-red-500/20"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Leave Session</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
+      {/* Right side - Google Meet style actions */}
+      <div className="flex items-center gap-2 w-1/4 justify-end">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setInviteOpen(true)}
+                className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
+              >
+                <UserPlus className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Invite People</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
@@ -395,30 +649,123 @@ function CustomControlDock({
               <Button
                 variant="ghost"
                 size="icon"
-                className="w-14 h-14 rounded-full bg-white/5 hover:bg-white/10 text-white transition-all"
+                onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)}
+                className={`w-12 h-12 rounded-full transition-all ${
+                  participantsSidebarOpen 
+                    ? "bg-primary/20 text-primary" 
+                    : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
+                }`}
               >
-                <Settings className="w-6 h-6" />
+                <Users className="w-5 h-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Settings</TooltipContent>
+            <TooltipContent>Participants</TooltipContent>
           </Tooltip>
         </TooltipProvider>
-
-        <div className="h-10 w-px bg-white/10 mx-2" />
 
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
               <Button
-                onClick={() => router.push("/dashboard")}
-                className="w-20 h-14 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg shadow-red-500/20"
+                variant="ghost"
+                size="icon"
+                onClick={() => setInteractionsOpen(!interactionsOpen)}
+                className={`w-12 h-12 rounded-full transition-all ${
+                  interactionsOpen 
+                    ? "bg-primary/20 text-primary" 
+                    : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
+                }`}
               >
-                <LogOut className="w-6 h-6" />
+                <HelpCircle className="w-5 h-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Leave Session</TooltipContent>
+            <TooltipContent>Activities (Polls & Q&A)</TooltipContent>
           </Tooltip>
         </TooltipProvider>
+
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setChatOpen(!chatOpen)}
+                className={`w-12 h-12 rounded-full transition-all ${
+                  chatOpen 
+                    ? "bg-primary/20 text-primary" 
+                    : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
+                }`}
+              >
+                <MessageSquare className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Chat</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </div>
+  );
+}
+
+// ─── Reaction Display Overlay ────────────────────────────────────────────────
+function ReactionOverlay() {
+  const room = useRoomContext();
+  const [activeReactions, setActiveReactions] = useState<{ id: string; emoji: string; name: string }[]>([]);
+
+  useEffect(() => {
+    if (!room) return;
+
+    const handleData = (payload: Uint8Array, participant?: any) => {
+      const decoder = new TextDecoder();
+      try {
+        const data = JSON.parse(decoder.decode(payload));
+        if (data.type === "reaction") {
+          const id = Math.random().toString(36).substring(7);
+          const name = participant?.name || participant?.identity || "Someone";
+          setActiveReactions((prev) => [...prev, { id, emoji: data.emoji, name }]);
+          setTimeout(() => {
+            setActiveReactions((prev) => prev.filter((r) => r.id !== id));
+          }, 3000);
+        }
+      } catch (e) {}
+    };
+
+    const handleLocal = (e: any) => {
+      const id = Math.random().toString(36).substring(7);
+      setActiveReactions((prev) => [...prev, { id, emoji: e.detail.emoji, name: "You" }]);
+      setTimeout(() => {
+        setActiveReactions((prev) => prev.filter((r) => r.id !== id));
+      }, 3000);
+    };
+
+    room.on("dataReceived", handleData);
+    window.addEventListener("local-reaction", handleLocal);
+    return () => {
+      room.off("dataReceived", handleData);
+      window.removeEventListener("local-reaction", handleLocal);
+    };
+  }, [room]);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-[100] flex items-end justify-center pb-32 overflow-hidden">
+      <div className="relative w-full h-full max-w-lg">
+        <AnimatePresence>
+          {activeReactions.map((r) => (
+            <motion.div
+              key={r.id}
+              initial={{ y: 0, x: Math.random() * 100 - 50, opacity: 0, scale: 0.5 }}
+              animate={{ y: -400, opacity: [0, 1, 1, 0], scale: [0.5, 1.2, 1.2, 0.8] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 2.5, ease: "easeOut" }}
+              className="absolute bottom-0 left-1/2 flex flex-col items-center"
+            >
+              <div className="text-4xl filter drop-shadow-lg mb-1">{r.emoji}</div>
+              <div className="bg-black/40 backdrop-blur-md px-2 py-0.5 rounded-full text-[10px] text-white/80 border border-white/5 whitespace-nowrap">
+                {r.name}
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );
@@ -431,9 +778,83 @@ export default function RoomPage() {
   const [token, setToken] = useState<string>("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [participantsSidebarOpen, setParticipantsSidebarOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [interactionsOpen, setInteractionsOpen] = useState(false);
+  const [isHandRaised, setIsHandRaised] = useState(false);
+  const [layout, setLayout] = useState<"tiled" | "spotlight" | "sidebar">("tiled");
+  const [showCaptions, setShowCaptions] = useState(false);
+  const [captions, setCaptions] = useState<{ id: string; text: string; user: string }[]>([]);
+  const [isBlurred, setIsBlurred] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [egressId, setEgressId] = useState<string | null>(null);
   const router = useRouter();
+
+  // Background Blur logic
+  useEffect(() => {
+    const applyBlur = async () => {
+      const { localParticipant } = room || {};
+      if (!localParticipant) return;
+      
+      const trackPublication = localParticipant.getTrackPublication(Track.Source.Camera);
+      const track = trackPublication?.videoTrack;
+      if (!track) return;
+
+      if (isBlurred) {
+        const { BackgroundBlur } = await import("@livekit/track-processors");
+        const processor = BackgroundBlur(10);
+        await track.setProcessor(processor);
+      } else {
+        await track.stopProcessor();
+      }
+    };
+
+    applyBlur();
+  }, [isBlurred, room]);
+
+  // Speech Recognition for Captions
+  useEffect(() => {
+    if (!showCaptions) return;
+    
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Captions are not supported in this browser");
+      setShowCaptions(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event: any) => {
+      const result = event.results[event.results.length - 1];
+      if (result.isFinal) {
+        const text = result[0].transcript;
+        const id = Math.random().toString(36).substring(7);
+        setCaptions((prev) => [...prev.slice(-3), { id, text, user: user?.displayName || "You" }]);
+        setTimeout(() => {
+          setCaptions((prev) => prev.filter((c) => c.id !== id));
+        }, 5000);
+      }
+    };
+
+    recognition.start();
+    return () => recognition.stop();
+  }, [showCaptions, user]);
+
+  const toggleHand = async () => {
+    if (!room) return;
+    const newState = !isHandRaised;
+    setIsHandRaised(newState);
+    
+    // Broadcast hand raised state via metadata
+    await room.localParticipant.setMetadata(JSON.stringify({ handRaised: newState }));
+    
+    if (newState) {
+      toast("You raised your hand", { icon: "✋" });
+    }
+  };
 
   const startRecording = async () => {
     try {
@@ -647,60 +1068,43 @@ export default function RoomPage() {
             )}
           </div>
 
-          {/* Right Actions */}
-          <div className="flex items-center gap-3 pointer-events-auto">
-            {/* ✅ Invite Button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    onClick={() => setInviteOpen(true)}
-                    className="h-12 px-5 rounded-2xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 backdrop-blur-xl font-medium gap-2"
-                  >
-                    <UserPlus className="w-4 h-4" />
-                    Invite
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Invite people to this room</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)}
-                    className="w-12 h-12 rounded-2xl bg-black/60 border border-white/10 text-white/70 hover:text-white hover:bg-black/80 backdrop-blur-xl"
-                  >
-                    <Users className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Participants</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="w-12 h-12 rounded-2xl bg-black/60 border border-white/10 text-white/70 hover:text-white hover:bg-black/80 backdrop-blur-xl"
-                  >
-                    <MessageSquare className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Chat</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          {/* Right Actions - Moved to bottom bar */}
+          <div className="flex items-center gap-3 pointer-events-auto invisible md:visible">
+            {/* Empty space to keep layout balanced if needed, or just remove */}
           </div>
         </div>
 
         {/* ── Video Grid ── */}
-        <div className="flex-1 flex items-center justify-center p-4 pt-24 pb-32">
-          <VideoConference />
+        <div className={`flex-1 flex items-center justify-center p-4 pt-20 pb-4 transition-all duration-300 ${participantsSidebarOpen || chatOpen || interactionsOpen ? 'mr-96' : ''}`}>
+          <MeetingGrid layout={layout} />
+          
+          {/* Live Captions Overlay */}
+          <AnimatePresence>
+            {showCaptions && captions.length > 0 && (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="absolute bottom-32 left-1/2 -translate-x-1/2 w-full max-w-2xl px-6 pointer-events-none z-40"
+              >
+                <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+                  <div className="space-y-3">
+                    {captions.map((cap) => (
+                      <motion.div 
+                        key={cap.id} 
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="flex gap-3"
+                      >
+                        <span className="text-primary font-bold text-xs uppercase min-w-[60px]">{cap.user}</span>
+                        <p className="text-white/90 text-sm leading-relaxed font-outfit">{cap.text}</p>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* ── Control Dock ── */}
@@ -708,6 +1112,21 @@ export default function RoomPage() {
           isRecording={isRecording}
           onStartRecording={startRecording}
           onStopRecording={stopRecording}
+          setInviteOpen={setInviteOpen}
+          setParticipantsSidebarOpen={setParticipantsSidebarOpen}
+          participantsSidebarOpen={participantsSidebarOpen}
+          chatOpen={chatOpen}
+          setChatOpen={setChatOpen}
+          isHandRaised={isHandRaised}
+          toggleHand={toggleHand}
+          layout={layout}
+          setLayout={setLayout}
+          showCaptions={showCaptions}
+          setShowCaptions={setShowCaptions}
+          interactionsOpen={interactionsOpen}
+          setInteractionsOpen={setInteractionsOpen}
+          isBlurred={isBlurred}
+          setIsBlurred={setIsBlurred}
         />
 
         <RoomAudioRenderer />
@@ -719,12 +1138,24 @@ export default function RoomPage() {
           roomId={roomId as string}
         />
 
-        {/* ── Participants Sidebar ── */}
+        {/* ── Sidebars ── */}
         <ParticipantsSidebar
           open={participantsSidebarOpen}
           onClose={() => setParticipantsSidebarOpen(false)}
           roomId={roomId as string}
         />
+
+        <ChatSidebar 
+          open={chatOpen}
+          onClose={() => setChatOpen(false)}
+        />
+
+        <InteractionsSidebar
+          open={interactionsOpen}
+          onClose={() => setInteractionsOpen(false)}
+        />
+
+        <ReactionOverlay />
       </div>
     </LiveKitRoom>
   );
