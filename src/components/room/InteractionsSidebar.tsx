@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
+import { useRoomContext } from "@livekit/components-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HelpCircle, BarChart2, Plus, X, Send, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,6 @@ export function InteractionsSidebar({
   onClose: () => void;
 }) {
   const room = useRoomContext();
-  const { isLocal } = useLocalParticipant();
   const [activeTab, setActiveTab] = useState<"polls" | "qa">("qa");
   const [polls, setPolls] = useState<Poll[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
