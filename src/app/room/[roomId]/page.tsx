@@ -6,6 +6,7 @@ import {
   RoomAudioRenderer,
   TrackToggle,
   useLocalParticipant,
+  useRoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track } from "livekit-client";
@@ -39,6 +40,13 @@ import {
   HelpCircle,
   Plus,
   Sparkles,
+  Smile,
+  Heart,
+  ThumbsUp,
+  Clap,
+  PartyPopper,
+  Laugh,
+  Surprise,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -263,17 +271,6 @@ function InviteDialog({
 }
 
 // ─── Control Dock ─────────────────────────────────────────────────────────────
-import { 
-  Smile,
-  Heart,
-  ThumbsUp,
-  Clap,
-  PartyPopper,
-  Laugh,
-  Surprise,
-} from "lucide-react";
-import { useRoomContext } from "@livekit/components-react";
-
 const REACTIONS = [
   { emoji: "💖", label: "love", icon: Heart },
   { emoji: "👍", label: "up", icon: ThumbsUp },
@@ -771,6 +768,32 @@ function ReactionOverlay() {
   );
 }
 
+// ─── Background Blur Manager ──────────────────────────────────────────────────
+function BlurManager({ isBlurred }: { isBlurred: boolean }) {
+  const room = useRoomContext();
+  
+  useEffect(() => {
+    const applyBlur = async () => {
+      if (!room) return;
+      const trackPublication = room.localParticipant.getTrackPublication(Track.Source.Camera);
+      const track = trackPublication?.videoTrack;
+      if (!track) return;
+
+      if (isBlurred) {
+        const { BackgroundBlur } = await import("@livekit/track-processors");
+        const processor = BackgroundBlur(10);
+        await track.setProcessor(processor);
+      } else {
+        await track.stopProcessor();
+      }
+    };
+
+    applyBlur();
+  }, [isBlurred, room]);
+
+  return null;
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function RoomPage() {
   const { roomId } = useParams();
@@ -789,27 +812,7 @@ export default function RoomPage() {
   const [egressId, setEgressId] = useState<string | null>(null);
   const router = useRouter();
 
-  // Background Blur logic
-  useEffect(() => {
-    const applyBlur = async () => {
-      const { localParticipant } = room || {};
-      if (!localParticipant) return;
-      
-      const trackPublication = localParticipant.getTrackPublication(Track.Source.Camera);
-      const track = trackPublication?.videoTrack;
-      if (!track) return;
 
-      if (isBlurred) {
-        const { BackgroundBlur } = await import("@livekit/track-processors");
-        const processor = BackgroundBlur(10);
-        await track.setProcessor(processor);
-      } else {
-        await track.stopProcessor();
-      }
-    };
-
-    applyBlur();
-  }, [isBlurred, room]);
 
   // Speech Recognition for Captions
   useEffect(() => {
@@ -1156,6 +1159,7 @@ export default function RoomPage() {
         />
 
         <ReactionOverlay />
+        <BlurManager isBlurred={isBlurred} />
       </div>
     </LiveKitRoom>
   );
