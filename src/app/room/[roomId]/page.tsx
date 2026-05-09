@@ -766,6 +766,17 @@ function ReactionOverlay() {
   );
 }
 
+// ─── Hand Status Manager ──────────────────────────────────────────────────────
+function HandStatusManager({ isHandRaised }: { isHandRaised: boolean }) {
+  const room = useRoomContext();
+  useEffect(() => {
+    if (room) {
+      room.localParticipant.setMetadata(JSON.stringify({ handRaised: isHandRaised }));
+    }
+  }, [isHandRaised, room]);
+  return null;
+}
+
 // ─── Background Blur Manager ──────────────────────────────────────────────────
 function BlurManager({ isBlurred }: { isBlurred: boolean }) {
   const room = useRoomContext();
@@ -844,14 +855,9 @@ export default function RoomPage() {
     return () => recognition.stop();
   }, [showCaptions, user]);
 
-  const toggleHand = async () => {
-    if (!room) return;
+  const toggleHand = () => {
     const newState = !isHandRaised;
     setIsHandRaised(newState);
-    
-    // Broadcast hand raised state via metadata
-    await room.localParticipant.setMetadata(JSON.stringify({ handRaised: newState }));
-    
     if (newState) {
       toast("You raised your hand", { icon: "✋" });
     }
@@ -1158,6 +1164,7 @@ export default function RoomPage() {
 
         <ReactionOverlay />
         <BlurManager isBlurred={isBlurred} />
+        <HandStatusManager isHandRaised={isHandRaised} />
       </div>
     </LiveKitRoom>
   );
