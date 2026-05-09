@@ -43,10 +43,8 @@ import {
   Smile,
   Heart,
   ThumbsUp,
-  Clap,
   PartyPopper,
   Laugh,
-  Surprise,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -274,10 +272,10 @@ function InviteDialog({
 const REACTIONS = [
   { emoji: "💖", label: "love", icon: Heart },
   { emoji: "👍", label: "up", icon: ThumbsUp },
-  { emoji: "👏", label: "clap", icon: Clap },
+  { emoji: "👏", label: "clap", icon: Hand },
   { emoji: "🎉", label: "party", icon: PartyPopper },
   { emoji: "😂", label: "laugh", icon: Laugh },
-  { emoji: "😮", label: "wow", icon: Surprise },
+  { emoji: "😮", label: "wow", icon: Laugh },
 ];
 
 function CustomControlDock({
