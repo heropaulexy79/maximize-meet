@@ -17,12 +17,10 @@ export function ChatSidebar({
 }) {
   const { chatMessages, send } = useChat();
   const [message, setMessage] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
   const handleSend = async (e: React.FormEvent) => {
@@ -65,8 +63,8 @@ export function ChatSidebar({
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-6" viewportRef={scrollRef}>
-            <div className="space-y-6">
+          <ScrollArea className="flex-1 p-6">
+            <div className="space-y-6 pb-4">
               {chatMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center pt-20 text-center space-y-4">
                   <div className="w-16 h-16 rounded-3xl bg-white/[0.02] border border-white/5 flex items-center justify-center">
@@ -96,6 +94,7 @@ export function ChatSidebar({
                   </motion.div>
                 ))
               )}
+              <div ref={messagesEndRef} />
             </div>
           </ScrollArea>
 
