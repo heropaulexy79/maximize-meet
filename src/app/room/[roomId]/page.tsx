@@ -363,17 +363,11 @@ function CustomControlDock({
                       : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                   }`}
                 >
-                  {isMicrophoneEnabled ? (
-                    <Mic className="w-5 h-5" />
-                  ) : (
-                    <MicOff className="w-5 h-5" />
-                  )}
+                  {isMicrophoneEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
                 </Button>
               </TrackToggle>
             </TooltipTrigger>
-            <TooltipContent>
-              {isMicrophoneEnabled ? "Mute Mic" : "Unmute Mic"}
-            </TooltipContent>
+            <TooltipContent>{isMicrophoneEnabled ? "Mute Mic" : "Unmute Mic"}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
@@ -390,40 +384,15 @@ function CustomControlDock({
                       : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                   }`}
                 >
-                  {isCameraEnabled ? (
-                    <Video className="w-5 h-5" />
-                  ) : (
-                    <VideoOff className="w-5 h-5" />
-                  )}
+                  {isCameraEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
                 </Button>
               </TrackToggle>
             </TooltipTrigger>
-            <TooltipContent>
-              {isCameraEnabled ? "Stop Video" : "Start Video"}
-            </TooltipContent>
+            <TooltipContent>{isCameraEnabled ? "Stop Video" : "Start Video"}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
-        {/* Background Blur */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsBlurred(!isBlurred)}
-                className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                  isBlurred ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                }`}
-              >
-                <Sparkles className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Blur Background</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        {/* Raise Hand */}
+        {/* Essential Mobile Controls */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
@@ -432,7 +401,7 @@ function CustomControlDock({
                 size="icon"
                 onClick={toggleHand}
                 className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                  isHandRaised ? "bg-amber-500 border-amber-500 text-black hover:bg-amber-600" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                  isHandRaised ? "bg-amber-500 border-amber-500 text-black" : "bg-white/5 border-white/10 text-white"
                 }`}
               >
                 <Hand className="w-5 h-5" />
@@ -442,186 +411,104 @@ function CustomControlDock({
           </Tooltip>
         </TooltipProvider>
 
-        {/* Reaction Picker Trigger */}
-        <div className="relative">
-          {showReactions && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-2 bg-zinc-900/90 border border-white/10 backdrop-blur-xl rounded-2xl flex gap-2 shadow-2xl z-50"
+        {/* Desktop-only secondary controls */}
+        <div className="hidden lg:flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsBlurred(!isBlurred)}
+            className={`w-12 h-12 rounded-full transition-all border ${isBlurred ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 text-white"}`}
+          >
+            <Sparkles className="w-5 h-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowReactions(!showReactions)}
+            className={`w-12 h-12 rounded-full transition-all border ${showReactions ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 text-white"}`}
+          >
+            <Smile className="w-5 h-5" />
+          </Button>
+
+          <TrackToggle source={Track.Source.ScreenShare} showIcon={false}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`w-12 h-12 rounded-full transition-all border ${isScreenShareEnabled ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 text-white"}`}
             >
-              {REACTIONS.map((r) => (
-                <button
-                  key={r.label}
-                  onClick={() => sendReaction(r.emoji)}
-                  className="w-10 h-10 flex items-center justify-center text-xl hover:bg-white/10 rounded-xl transition-colors"
-                >
-                  {r.emoji}
+              <MonitorUp className="w-5 h-5" />
+            </Button>
+          </TrackToggle>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowCaptions(!showCaptions)}
+            className={`w-12 h-12 rounded-full transition-all border ${showCaptions ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 text-white"}`}
+          >
+            <Captions className="w-5 h-5" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={isRecording ? onStopRecording : onStartRecording}
+            className={`w-12 h-12 rounded-full transition-all border ${isRecording ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse" : "bg-white/5 border-white/10 text-white"}`}
+          >
+            {isRecording ? <CircleStop className="w-5 h-5" /> : <CircleDot className="w-5 h-5" />}
+          </Button>
+        </div>
+
+        {/* Mobile 'More' Menu */}
+        <div className="lg:hidden relative">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowLayoutMenu(!showLayoutMenu)}
+            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white"
+          >
+            <MoreVertical className="w-5 h-5" />
+          </Button>
+          
+          <AnimatePresence>
+            {showLayoutMenu && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute bottom-16 right-0 w-48 bg-zinc-900/95 border border-white/10 backdrop-blur-xl rounded-2xl p-2 shadow-2xl z-50 overflow-hidden"
+              >
+                <button onClick={() => { setShowCaptions(!showCaptions); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
+                  <Captions className="w-4 h-4" /> {showCaptions ? "Hide" : "Show"} Captions
                 </button>
-              ))}
-            </motion.div>
-          )}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowReactions(!showReactions)}
-                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                    showReactions ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                  }`}
-                >
-                  <Smile className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Send Reaction</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+                <button onClick={() => { setIsBlurred(!isBlurred); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
+                  <Sparkles className="w-4 h-4" /> {isBlurred ? "Disable" : "Enable"} Blur
+                </button>
+                <button onClick={() => { setShowReactions(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
+                  <Smile className="w-4 h-4" /> Send Reaction
+                </button>
+                <button onClick={() => { setInviteOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5 border-t border-white/5 mt-1 pt-3">
+                  <UserPlus className="w-4 h-4" /> Invite People
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <TrackToggle source={Track.Source.ScreenShare} showIcon={false}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                    isScreenShareEnabled
-                      ? "bg-primary/20 border-primary text-primary hover:bg-primary/30"
-                      : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                  }`}
-                >
-                  <MonitorUp className="w-5 h-5" />
-                </Button>
-              </TrackToggle>
-            </TooltipTrigger>
-            <TooltipContent>Share Screen</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <div className="mx-1 md:mx-2" />
 
-        {/* Layout Switcher */}
-        <div className="relative">
-          {showLayoutMenu && (
-            <motion.div 
-              initial={{ opacity: 0, y: 10, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              className="absolute bottom-16 left-1/2 -translate-x-1/2 p-1.5 bg-zinc-900/95 border border-white/10 backdrop-blur-xl rounded-2xl flex flex-col gap-1 shadow-2xl z-50 min-w-[140px]"
-            >
-              <button 
-                onClick={() => { setLayout("tiled"); setShowLayoutMenu(false); }}
-                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all ${layout === 'tiled' ? 'bg-primary/20 text-primary' : 'text-white/70 hover:bg-white/5'}`}
-              >
-                <LayoutGrid className="w-4 h-4" /> Tiled View
-              </button>
-              <button 
-                onClick={() => { setLayout("spotlight"); setShowLayoutMenu(false); }}
-                className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs transition-all ${layout === 'spotlight' ? 'bg-primary/20 text-primary' : 'text-white/70 hover:bg-white/5'}`}
-              >
-                <Square className="w-4 h-4" /> Spotlight
-              </button>
-            </motion.div>
-          )}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowLayoutMenu(!showLayoutMenu)}
-                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                    showLayoutMenu ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                  }`}
-                >
-                  <LayoutGrid className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Change Layout</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-
-        {/* CC Button */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowCaptions(!showCaptions)}
-                className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                  showCaptions ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                }`}
-              >
-                <Captions className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Turn on Captions</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        {/* Record Button */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={isRecording ? onStopRecording : onStartRecording}
-                className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                  isRecording
-                    ? "bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30 animate-pulse"
-                    : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                }`}
-              >
-                {isRecording ? (
-                  <CircleStop className="w-5 h-5" />
-                ) : (
-                  <CircleDot className="w-5 h-5" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {isRecording ? "Stop Recording" : "Start Recording"}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="w-12 h-12 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 text-white transition-all"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Settings</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <div className="mx-2" />
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                onClick={() => router.push("/dashboard")}
-                className="w-16 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg shadow-red-500/20"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Leave Session</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          onClick={() => router.push("/dashboard")}
+          className="w-12 md:w-16 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg shadow-red-500/20 flex items-center justify-center shrink-0"
+        >
+          <LogOut className="w-5 h-5" />
+        </Button>
+      </div>
       </div>
 
       {/* Right side - Google Meet style actions */}
-      <div className="flex items-center gap-2 w-1/4 justify-end">
+      <div className="hidden md:flex items-center gap-2 w-1/4 justify-end">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
