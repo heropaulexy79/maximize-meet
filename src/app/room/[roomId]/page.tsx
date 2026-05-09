@@ -25,6 +25,7 @@ import {
   Settings,
   Circle,
   Maximize2,
+  User,
   UserPlus,
   Copy,
   Check,
@@ -42,6 +43,13 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -49,7 +57,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
 import { ParticipantsSidebar } from "@/components/room/ParticipantsSidebar";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
