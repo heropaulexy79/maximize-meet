@@ -505,7 +505,6 @@ function CustomControlDock({
           <LogOut className="w-5 h-5" />
         </Button>
       </div>
-      </div>
 
       {/* Right side - Google Meet style actions */}
       <div className="hidden md:flex items-center gap-2 w-1/4 justify-end">
