@@ -70,9 +70,14 @@ function ParticipantOverlay({ participant }: { participant: Participant }) {
         )}
       </AnimatePresence>
       
-      <div className="absolute bottom-4 left-4 px-3 py-1 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 text-[10px] text-white/90 font-medium">
-        {participant.name || participant.identity}
-        {participant.isLocal && " (You)"}
+      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end pointer-events-none">
+        <div className="px-3 py-1.5 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-[11px] text-white font-bold shadow-xl flex items-center gap-2">
+          <div className={`w-1.5 h-1.5 rounded-full ${participant.isLocal ? 'bg-primary' : 'bg-green-500'}`} />
+          <span className="truncate max-w-[120px]">
+            {participant.name || participant.identity}
+            {participant.isLocal && " (You)"}
+          </span>
+        </div>
       </div>
     </div>
   );

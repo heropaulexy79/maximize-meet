@@ -489,6 +489,15 @@ function CustomControlDock({
                 <button onClick={() => { setShowReactions(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
                   <Smile className="w-4 h-4" /> Send Reaction
                 </button>
+                <button onClick={() => { setChatOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5 border-t border-white/5 mt-1 pt-3">
+                  <MessageSquare className="w-4 h-4" /> Open Chat
+                </button>
+                <button onClick={() => { setParticipantsSidebarOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
+                  <Users className="w-4 h-4" /> Participants
+                </button>
+                <button onClick={() => { setInteractionsOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
+                  <HelpCircle className="w-4 h-4" /> Activities
+                </button>
                 <button onClick={() => { setInviteOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5 border-t border-white/5 mt-1 pt-3">
                   <UserPlus className="w-4 h-4" /> Invite People
                 </button>
