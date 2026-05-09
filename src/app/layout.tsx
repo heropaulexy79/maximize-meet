@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 
@@ -18,6 +18,20 @@ import { Toaster } from "@/components/ui/sonner";
 export const metadata: Metadata = {
   title: "MAXIMIZE NATION | Premium Leadership Academy",
   description: "A premium mentorship and leadership training platform for transformational coaching and cohort-based learning.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Maximize",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#050505",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

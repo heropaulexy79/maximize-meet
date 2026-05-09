@@ -69,7 +69,7 @@ export function ParticipantsSidebar({ open, onClose, roomId }: ParticipantsSideb
           initial={{ x: 400, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 400, opacity: 0 }}
-          className="fixed right-0 top-0 bottom-0 w-80 bg-black/80 backdrop-blur-3xl border-l border-white/10 z-[100] flex flex-col shadow-2xl"
+          className="fixed right-0 top-0 bottom-0 md:top-0 md:bottom-0 md:right-0 w-full md:w-80 bg-black/80 backdrop-blur-3xl border-l border-white/10 z-[100] flex flex-col shadow-2xl"
         >
           <div className="p-6 border-b border-white/10 flex items-center justify-between">
             <h2 className="text-xl font-outfit font-bold text-white flex items-center gap-2">

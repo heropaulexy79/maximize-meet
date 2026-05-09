@@ -336,9 +336,9 @@ function CustomControlDock({
   };
 
   return (
-    <div className="relative z-50 px-8 flex items-center justify-between bg-[#050505] border-t border-white/5 h-24 w-full">
-      {/* Left side info (Time) */}
-      <div className="flex items-center gap-4 w-1/4">
+    <div className="relative z-50 px-2 md:px-8 flex items-center justify-between bg-[#050505] border-t border-white/5 h-20 md:h-24 w-full">
+      {/* Left side info (Time) - Hidden on Mobile */}
+      <div className="hidden md:flex items-center gap-4 w-1/4">
         <div className="text-white font-mono text-sm tracking-widest opacity-60">
           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
@@ -349,7 +349,7 @@ function CustomControlDock({
       </div>
 
       {/* Center Controls */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 md:gap-3 mx-auto md:mx-0">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger>
@@ -357,7 +357,7 @@ function CustomControlDock({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`w-12 h-12 rounded-full transition-all border ${
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                     !isMicrophoneEnabled
                       ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
                       : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
@@ -384,7 +384,7 @@ function CustomControlDock({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`w-12 h-12 rounded-full transition-all border ${
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                     !isCameraEnabled
                       ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
                       : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
@@ -412,7 +412,7 @@ function CustomControlDock({
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsBlurred(!isBlurred)}
-                className={`w-12 h-12 rounded-full transition-all border ${
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                   isBlurred ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                 }`}
               >
@@ -431,7 +431,7 @@ function CustomControlDock({
                 variant="ghost"
                 size="icon"
                 onClick={toggleHand}
-                className={`w-12 h-12 rounded-full transition-all border ${
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                   isHandRaised ? "bg-amber-500 border-amber-500 text-black hover:bg-amber-600" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                 }`}
               >
@@ -468,7 +468,7 @@ function CustomControlDock({
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowReactions(!showReactions)}
-                  className={`w-12 h-12 rounded-full transition-all border ${
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                     showReactions ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                   }`}
                 >
@@ -487,7 +487,7 @@ function CustomControlDock({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className={`w-12 h-12 rounded-full transition-all border ${
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                     isScreenShareEnabled
                       ? "bg-primary/20 border-primary text-primary hover:bg-primary/30"
                       : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
@@ -530,7 +530,7 @@ function CustomControlDock({
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowLayoutMenu(!showLayoutMenu)}
-                  className={`w-12 h-12 rounded-full transition-all border ${
+                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                     showLayoutMenu ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                   }`}
                 >
@@ -550,7 +550,7 @@ function CustomControlDock({
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowCaptions(!showCaptions)}
-                className={`w-12 h-12 rounded-full transition-all border ${
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                   showCaptions ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
                 }`}
               >
@@ -569,7 +569,7 @@ function CustomControlDock({
                 variant="ghost"
                 size="icon"
                 onClick={isRecording ? onStopRecording : onStartRecording}
-                className={`w-12 h-12 rounded-full transition-all border ${
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
                   isRecording
                     ? "bg-red-500/20 border-red-500/50 text-red-400 hover:bg-red-500/30 animate-pulse"
                     : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
@@ -1082,7 +1082,7 @@ export default function RoomPage() {
         </div>
 
         {/* ── Video Grid ── */}
-        <div className={`flex-1 flex items-center justify-center p-4 pt-20 pb-4 transition-all duration-300 ${participantsSidebarOpen || chatOpen || interactionsOpen ? 'mr-96' : ''}`}>
+        <div className={`flex-1 flex items-center justify-center p-2 md:p-4 pt-16 md:pt-20 pb-4 transition-all duration-300 ${participantsSidebarOpen || chatOpen || interactionsOpen ? 'lg:mr-96' : ''}`}>
           <MeetingGrid layout={layout} />
           
           {/* Live Captions Overlay */}

@@ -39,7 +39,7 @@ export function ChatSidebar({
           animate={{ x: 0 }}
           exit={{ x: 400 }}
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
-          className="fixed top-0 right-0 h-[calc(100vh-96px)] w-96 bg-[#050505] border-l border-white/5 z-[60] flex flex-col shadow-2xl"
+          className="fixed top-0 right-0 h-[calc(100vh-80px)] md:h-[calc(100vh-96px)] w-full md:w-96 bg-[#050505] border-l border-white/5 z-[60] flex flex-col shadow-2xl"
         >
           {/* Header */}
           <div className="p-6 border-b border-white/5 flex items-center justify-between">

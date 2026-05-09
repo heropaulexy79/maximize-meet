@@ -34,10 +34,12 @@ export function MeetingGrid({
   }
 
   return (
-    <div className="w-full h-full grid gap-4 p-4 auto-rows-fr" 
-         style={{ 
-           gridTemplateColumns: `repeat(${participants.length > 1 ? (participants.length > 4 ? 3 : 2) : 1}, 1fr)` 
-         }}>
+    <div className={`w-full h-full grid gap-4 p-4 auto-rows-fr ${
+      participants.length === 1 ? 'grid-cols-1' :
+      participants.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+      participants.length <= 4 ? 'grid-cols-1 md:grid-cols-2' :
+      'grid-cols-2 lg:grid-cols-3'
+    }`}>
       {participants.map((p) => (
         <div key={p.sid} className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-zinc-900">
           <ParticipantTile trackRef={{ participant: p, source: Track.Source.Camera }}>

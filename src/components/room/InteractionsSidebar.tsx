@@ -101,7 +101,7 @@ export function InteractionsSidebar({
           initial={{ x: 400 }}
           animate={{ x: 0 }}
           exit={{ x: 400 }}
-          className="fixed top-0 right-0 h-[calc(100vh-96px)] w-96 bg-[#050505] border-l border-white/5 z-[60] flex flex-col shadow-2xl"
+          className="fixed top-0 right-0 h-[calc(100vh-80px)] md:h-[calc(100vh-96px)] w-full md:w-96 bg-[#050505] border-l border-white/5 z-[60] flex flex-col shadow-2xl"
         >
           <div className="p-6 border-b border-white/5 flex items-center justify-between">
             <div className="flex bg-white/[0.03] p-1 rounded-xl">
