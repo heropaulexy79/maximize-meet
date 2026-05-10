@@ -973,6 +973,21 @@ export default function RoomPage() {
       data-lk-theme="default"
       onDisconnected={() => router.push("/dashboard")}
       className="h-screen bg-[#050505]"
+      options={{
+        adaptiveStream: true, // Automatically pauses video for people off-screen
+        dynacast: true,       // Dynamically adjust quality to save bandwidth
+        videoCaptureDefaults: {
+          resolution: { width: 480, height: 270, frameRate: 15 }, // Extremely low data capture (270p, 15fps)
+        },
+        publishDefaults: {
+          videoEncoding: {
+            maxBitrate: 150_000, // Cap upload at 150kbps (tiny fraction of what Zoom uses)
+            maxFramerate: 15,
+          },
+          simulcast: false, // Don't upload 3 versions of the video, just the single tiny one
+          stopMicTrackOnMute: true, // Completely kill the mic track to save data when muted
+        }
+      }}
     >
       <div className="relative h-screen flex flex-col">
         {/* ── Header ── */}

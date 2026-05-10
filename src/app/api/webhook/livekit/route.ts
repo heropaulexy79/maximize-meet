@@ -80,11 +80,13 @@ export async function POST(req: NextRequest) {
         // Status 3 is EGRESS_COMPLETE
         // Check if there's a file URL
         let fileUrl = "";
-        // Some versions of sdk use file.location, others use fileResults
-        if (egressInfo.file && egressInfo.file.location) {
-          fileUrl = egressInfo.file.location;
-        } else if (egressInfo.fileResults && egressInfo.fileResults.length > 0) {
+        
+        // Use fileResults which is strictly typed in modern LiveKit SDKs
+        if (egressInfo.fileResults && egressInfo.fileResults.length > 0) {
           fileUrl = egressInfo.fileResults[0].location;
+        } else if ((egressInfo as any).file && (egressInfo as any).file.location) {
+          // Fallback for older payloads, cast to any to bypass strict TS check
+          fileUrl = (egressInfo as any).file.location;
         }
 
         const docRef = adminDb.collection("replays").doc(egressInfo.egressId);
