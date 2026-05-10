@@ -1,11 +1,11 @@
 {
   "name": "Maximize Meet",
-  "short_name": "Maximize",
-  "description": "Premium Leadership Conferencing Platform",
+  "short_name": "Maximize Meet",
+  "description": "Premium Leadership Conferencing Platform by Maximize Nation",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#050505",
-  "theme_color": "#000000",
+  "background_color": "#050a1a",
+  "theme_color": "#00e5ff",
   "icons": [
     {
       "src": "/icons/icon-192x192.png",

@@ -14,20 +14,21 @@ const outfit = Outfit({
 
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+import { PWAInstallPrompt } from "@/components/PWAInstallPrompt";
 
 export const metadata: Metadata = {
-  title: "MAXIMIZE NATION | Premium Leadership Academy",
+  title: "Maximize Meet | Premium Leadership Conferencing",
   description: "A premium mentorship and leadership training platform for transformational coaching and cohort-based learning.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Maximize",
+    title: "Maximize Meet",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#050505",
+  themeColor: "#00e5ff",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -49,6 +50,7 @@ export default function RootLayout({
         <AuthProvider>
           {children}
           <Toaster position="top-right" richColors />
+          <PWAInstallPrompt />
         </AuthProvider>
       </body>
     </html>
