@@ -684,12 +684,19 @@ function BlurManager({ isBlurred }: { isBlurred: boolean }) {
       const track = trackPublication?.videoTrack;
       if (!track) return;
 
-      if (isBlurred) {
-        const { BackgroundBlur } = await import("@livekit/track-processors");
-        const processor = BackgroundBlur(10);
-        await track.setProcessor(processor);
-      } else {
-        await track.stopProcessor();
+      try {
+        if (isBlurred) {
+          const { BackgroundBlur } = await import("@livekit/track-processors");
+          const processor = BackgroundBlur(10);
+          await track.setProcessor(processor);
+        } else {
+          // Only stop if there is a processor
+          if (track.getProcessor()) {
+            await track.stopProcessor();
+          }
+        }
+      } catch (e) {
+        console.error("Blur processing error:", e);
       }
     };
 

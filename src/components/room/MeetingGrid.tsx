@@ -23,8 +23,8 @@ export function MeetingGrid({
     return (
       <div className="w-full h-full flex items-center justify-center">
         {spotlightParticipant && (
-          <div className="relative w-full max-w-5xl aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl">
-            <ParticipantTile trackRef={{ participant: spotlightParticipant, source: Track.Source.Camera }} />
+          <div className="relative w-full max-w-5xl aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center bg-zinc-900">
+            <ParticipantTile participant={spotlightParticipant} className="w-full h-full [&>video]:object-cover" />
             <ParticipantOverlay participant={spotlightParticipant} />
           </div>
         )}
@@ -40,8 +40,8 @@ export function MeetingGrid({
       'grid-cols-2 lg:grid-cols-3'
     }`}>
       {participants.map((p) => (
-        <div key={p.sid} className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-zinc-900">
-          <ParticipantTile trackRef={{ participant: p, source: Track.Source.Camera }} />
+        <div key={p.sid} className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-zinc-900 flex items-center justify-center">
+          <ParticipantTile participant={p} className="w-full h-full [&>video]:object-cover" />
           <ParticipantOverlay participant={p} />
         </div>
       ))}
