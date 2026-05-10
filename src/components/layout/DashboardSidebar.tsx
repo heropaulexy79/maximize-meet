@@ -22,6 +22,7 @@ import { toast } from "sonner";
 const menuItems = [
   { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
   { icon: Video, label: "Sessions", href: "/dashboard/sessions" },
+  { icon: Users, label: "Attendance", href: "/dashboard/attendance" },
   { icon: BookOpen, label: "Vault", href: "/vault" },
   { icon: Users, label: "Cohorts", href: "/dashboard/cohorts" },
   { icon: ShieldCheck, label: "Leadership", href: "/dashboard/leadership" },

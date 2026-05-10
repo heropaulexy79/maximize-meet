@@ -9,7 +9,7 @@ import {
   useRoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track } from "livekit-client";
+import { Track, RoomEvent } from "livekit-client";
 import { useAuth } from "@/context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -699,6 +699,35 @@ function BlurManager({ isBlurred }: { isBlurred: boolean }) {
   return null;
 }
 
+// ─── Participant Event Notifier ───────────────────────────────────────────────
+function ParticipantEventNotifier() {
+  const room = useRoomContext();
+
+  useEffect(() => {
+    if (!room) return;
+
+    const handleConnected = (participant: any) => {
+      const name = participant.name || participant.identity || "Someone";
+      toast.success(`${name} joined the room`);
+    };
+
+    const handleDisconnected = (participant: any) => {
+      const name = participant.name || participant.identity || "Someone";
+      toast(`${name} left the room`);
+    };
+
+    room.on(RoomEvent.ParticipantConnected, handleConnected);
+    room.on(RoomEvent.ParticipantDisconnected, handleDisconnected);
+
+    return () => {
+      room.off(RoomEvent.ParticipantConnected, handleConnected);
+      room.off(RoomEvent.ParticipantDisconnected, handleDisconnected);
+    };
+  }, [room]);
+
+  return null;
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function RoomPage() {
   const { roomId } = useParams();
@@ -1061,6 +1090,7 @@ export default function RoomPage() {
         <ReactionOverlay />
         <BlurManager isBlurred={isBlurred} />
         <HandStatusManager isHandRaised={isHandRaised} />
+        <ParticipantEventNotifier />
       </div>
     </LiveKitRoom>
   );
