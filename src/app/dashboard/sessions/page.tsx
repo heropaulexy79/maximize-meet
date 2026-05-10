@@ -31,6 +31,8 @@ interface SessionData {
   time: string;
   status: "upcoming" | "scheduled" | "live";
   cohort: string;
+  roomId?: string;
+  recurrence?: "none" | "daily" | "weekly" | "monthly";
 }
 
 export default function SessionsPage() {
@@ -122,7 +124,7 @@ export default function SessionsPage() {
                         </div>
                         
                         <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             <Badge className="bg-primary/10 text-primary border-primary/20 rounded-full px-3">
                               {session.cohort}
                             </Badge>
@@ -132,17 +134,22 @@ export default function SessionsPage() {
                             )}>
                               {session.status === "live" ? "Live Now" : session.status.charAt(0).toUpperCase() + session.status.slice(1)}
                             </Badge>
+                            {session.recurrence && session.recurrence !== "none" && (
+                              <Badge className="rounded-full px-3 bg-cyan-500/10 text-cyan-400 border-cyan-500/20">
+                                🔁 {session.recurrence.charAt(0).toUpperCase() + session.recurrence.slice(1)}
+                              </Badge>
+                            )}
                           </div>
                           <h3 className="text-2xl font-bold text-white">{session.title}</h3>
                           <p className="text-muted-foreground">Led by {session.instructor}</p>
                         </div>
 
                         <div className="flex flex-row md:flex-col items-center md:items-end gap-4 w-full md:w-auto pt-6 md:pt-0 border-t md:border-t-0 border-white/5">
-                          <div className="flex items-center gap-2 text-muted-foreground font-mono">
+                          <div className="flex items-center gap-2 text-muted-foreground font-mono text-sm">
                             <Clock className="w-4 h-4" />
-                            {session.time}
+                            {new Date(session.time).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
                           </div>
-                          <Link href={`/room/${session.id}`} className="flex-1 md:flex-none">
+                          <Link href={`/room/${session.roomId || session.id}`} className="flex-1 md:flex-none">
                             <Button className="w-full md:w-auto rounded-xl bg-white/5 hover:bg-primary hover:text-white border-white/10 transition-all">
                               Join Room
                               <ArrowRight className="ml-2 w-4 h-4" />

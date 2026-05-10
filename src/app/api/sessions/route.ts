@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { title, instructor, time, cohort, status } = body;
+    const { title, instructor, time, cohort, status, roomId, recurrence } = body;
 
     if (!title || !instructor || !time || !cohort) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
       time,
       cohort,
       status: status || "scheduled",
+      roomId: roomId || null,
+      recurrence: recurrence || "none", // "none" | "daily" | "weekly" | "monthly"
       createdAt: new Date().toISOString(),
       createdBy: decodedToken.uid,
     });
@@ -49,14 +51,27 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const snapshot = await adminDb.collection("sessions").orderBy("createdAt", "desc").get();
-    const sessions = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const now = new Date().toISOString();
+
+    const snapshot = await adminDb
+      .collection("sessions")
+      .orderBy("time", "asc")
+      .get();
+
+    const sessions = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as any))
+      .filter(session => {
+        // Always keep live sessions
+        if (session.status === "live") return true;
+        // Keep recurring sessions always (they repeat)
+        if (session.recurrence && session.recurrence !== "none") return true;
+        // Filter out past one-time sessions
+        return session.time >= now;
+      });
 
     return NextResponse.json({ sessions });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
