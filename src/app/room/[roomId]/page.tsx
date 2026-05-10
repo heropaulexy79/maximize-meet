@@ -9,7 +9,7 @@ import {
   useRoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track, RoomEvent, VideoPresets } from "livekit-client";
+import { Track, RoomEvent } from "livekit-client";
 import { useAuth } from "@/context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -976,12 +976,12 @@ export default function RoomPage() {
       options={{
         adaptiveStream: true,
         dynacast: true,
-        videoCaptureDefaults: {
-          resolution: VideoPresets.h360.resolution, // Standard low-data 360p (stable across browsers)
-        },
         publishDefaults: {
-          videoEncoding: VideoPresets.h360.encoding, // Matching standard encoding
-          simulcast: false, // Save upload bandwidth
+          videoEncoding: {
+            maxBitrate: 150_000, // Still strictly limits upload data to 150kbps
+            maxFramerate: 15,
+          },
+          simulcast: false,
           stopMicTrackOnMute: true,
         }
       }}
