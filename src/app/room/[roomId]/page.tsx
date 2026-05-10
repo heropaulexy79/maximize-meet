@@ -9,7 +9,7 @@ import {
   useRoomContext,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
-import { Track, RoomEvent } from "livekit-client";
+import { Track, RoomEvent, VideoPresets } from "livekit-client";
 import { useAuth } from "@/context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -974,18 +974,15 @@ export default function RoomPage() {
       onDisconnected={() => router.push("/dashboard")}
       className="h-screen bg-[#050505]"
       options={{
-        adaptiveStream: true, // Automatically pauses video for people off-screen
-        dynacast: true,       // Dynamically adjust quality to save bandwidth
+        adaptiveStream: true,
+        dynacast: true,
         videoCaptureDefaults: {
-          resolution: { width: 480, height: 270, frameRate: 15 }, // Extremely low data capture (270p, 15fps)
+          resolution: VideoPresets.h360.resolution, // Standard low-data 360p (stable across browsers)
         },
         publishDefaults: {
-          videoEncoding: {
-            maxBitrate: 150_000, // Cap upload at 150kbps (tiny fraction of what Zoom uses)
-            maxFramerate: 15,
-          },
-          simulcast: false, // Don't upload 3 versions of the video, just the single tiny one
-          stopMicTrackOnMute: true, // Completely kill the mic track to save data when muted
+          videoEncoding: VideoPresets.h360.encoding, // Matching standard encoding
+          simulcast: false, // Save upload bandwidth
+          stopMicTrackOnMute: true,
         }
       }}
     >
