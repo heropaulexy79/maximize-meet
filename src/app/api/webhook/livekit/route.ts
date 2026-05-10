@@ -73,6 +73,51 @@ export async function POST(req: NextRequest) {
         console.log(`[Attendance] Recorded LEAVE for ${participant.identity} in room ${room.name} (Duration: ${durationSeconds}s)`);
       }
     }
+    // ─── RECORDING FINISHED ───────────────────────────────────────────────
+    else if (event.event === "egress_ended") {
+      const egressInfo = event.egressInfo;
+      if (egressInfo) {
+        // Status 3 is EGRESS_COMPLETE
+        // Check if there's a file URL
+        let fileUrl = "";
+        // Some versions of sdk use file.location, others use fileResults
+        if (egressInfo.file && egressInfo.file.location) {
+          fileUrl = egressInfo.file.location;
+        } else if (egressInfo.fileResults && egressInfo.fileResults.length > 0) {
+          fileUrl = egressInfo.fileResults[0].location;
+        }
+
+        const docRef = adminDb.collection("replays").doc(egressInfo.egressId);
+        
+        let durationSeconds = 0;
+        const startedAt = Number(egressInfo.startedAt);
+        const endedAt = Number(egressInfo.endedAt);
+        if (startedAt && endedAt) {
+          // LiveKit timestamps are often in nanoseconds
+          if (startedAt > 1e16) {
+            durationSeconds = Math.floor((endedAt - startedAt) / 1e9);
+          } else {
+            durationSeconds = Math.floor((endedAt - startedAt));
+          }
+        }
+
+        await docRef.set({
+          id: egressInfo.egressId,
+          roomId: egressInfo.roomName,
+          title: `Session Recording: ${egressInfo.roomName}`,
+          instructor: "Academy Instructor",
+          category: "Live Session",
+          date: admin.firestore.Timestamp.fromDate(eventTime),
+          durationSeconds: durationSeconds,
+          fileUrl: fileUrl,
+          thumbnail: "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1000",
+          status: egressInfo.status,
+          error: egressInfo.error || null
+        }, { merge: true });
+        
+        console.log(`[Vault] Recorded egress_ended for room ${egressInfo.roomName}`);
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

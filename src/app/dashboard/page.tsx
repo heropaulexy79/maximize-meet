@@ -23,7 +23,7 @@ import {
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit, getDocs } from "firebase/firestore";
 
 interface SessionData {
   id: string;
@@ -39,6 +39,7 @@ export default function DashboardPage() {
 
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [activeCohortsCount, setActiveCohortsCount] = useState(0);
+  const [recentReplays, setRecentReplays] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +60,18 @@ export default function DashboardPage() {
 
     fetchSessions();
 
+    // Fetch recent replays
+    const fetchReplays = async () => {
+      try {
+        const replaysQ = query(collection(db, "replays"), orderBy("date", "desc"), limit(2));
+        const snapshot = await getDocs(replaysQ);
+        setRecentReplays(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (error) {
+        console.error("Error fetching replays:", error);
+      }
+    };
+    fetchReplays();
+
     // 2. Listen for active cohorts count
     const cohortsQ = query(collection(db, "cohorts"));
     const unsubCohorts = onSnapshot(cohortsQ, (snapshot) => {
@@ -70,11 +83,13 @@ export default function DashboardPage() {
     };
   }, []);
 
-  // Placeholder replays until the vault is linked
-  const recentReplays = [
-    { title: "Building Resilient Cultures", date: "May 5, 2024", duration: "1h 45m" },
-    { title: "Strategic Execution Workshop", date: "May 2, 2024", duration: "2h 10m" },
-  ];
+  const formatDuration = (seconds: number) => {
+    if (!seconds) return "0m";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  };
 
   return (
     <div className="flex min-h-screen bg-black">
@@ -213,21 +228,34 @@ export default function DashboardPage() {
               </div>
 
               <div className="space-y-4">
-                {recentReplays.map((replay, idx) => (
-                  <Card key={idx} className="bg-white/[0.03] border-white/5 rounded-3xl overflow-hidden group">
-                    <CardHeader className="p-0 aspect-video bg-zinc-900 relative flex items-center justify-center">
-                      <PlayCircle className="w-12 h-12 text-white/20 group-hover:text-primary transition-colors z-10" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                    </CardHeader>
-                    <CardContent className="p-5">
-                      <h4 className="font-bold text-white mb-1">{replay.title}</h4>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground uppercase tracking-widest">
-                        <span>{replay.date}</span>
-                        <span>{replay.duration}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                {recentReplays.length === 0 ? (
+                  <div className="text-center p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
+                    <p className="text-sm text-muted-foreground">No replays available yet.</p>
+                  </div>
+                ) : (
+                  recentReplays.map((replay) => (
+                    <Link href={`/vault/${replay.id}`} key={replay.id} className="block">
+                      <Card className="bg-white/[0.03] border-white/5 rounded-3xl overflow-hidden group hover:bg-white/[0.05] transition-all">
+                        <CardHeader className="p-0 aspect-video bg-zinc-900 relative flex items-center justify-center overflow-hidden">
+                          <img 
+                            src={replay.thumbnail || "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1000"} 
+                            alt={replay.title} 
+                            className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity group-hover:scale-105 duration-500"
+                          />
+                          <PlayCircle className="w-12 h-12 text-white/80 group-hover:text-primary transition-colors z-10 shadow-lg rounded-full" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        </CardHeader>
+                        <CardContent className="p-5">
+                          <h4 className="font-bold text-white mb-1 truncate">{replay.title}</h4>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground uppercase tracking-widest">
+                            <span>{replay.date ? new Date(replay.date.toDate()).toLocaleDateString() : "Unknown"}</span>
+                            <span>{formatDuration(replay.durationSeconds)}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))
+                )}
               </div>
 
               <Card className="bg-primary/5 border border-primary/20 rounded-[2rem] p-6 overflow-hidden relative">
