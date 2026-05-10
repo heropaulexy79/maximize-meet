@@ -3,7 +3,7 @@ import {
   EncodedFileType,
   EncodedOutputs,
 } from "livekit-server-sdk";
-import { EncodedFileOutput, GCPUpload } from "@livekit/protocol";
+import { EncodedFileOutput, GCPUpload, S3Upload } from "@livekit/protocol";
 import { NextRequest, NextResponse } from "next/server";
 
 const getLiveKitHost = (url: string) => {
@@ -30,27 +30,39 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const bucket = process.env.FIREBASE_STORAGE_BUCKET || "";
-      const credentials = process.env.GCP_CREDENTIALS || "";
-      
-      // Basic check for credentials
-      const hasStorage =
-        bucket &&
-        credentials &&
-        credentials.includes("{") && // Simple JSON check
-        credentials !== "paste-your-service-account-json-here";
+      const s3Bucket = process.env.S3_BUCKET || "";
+      const s3AccessKey = process.env.S3_ACCESS_KEY || "";
+      const s3SecretKey = process.env.S3_SECRET_KEY || "";
+      const s3Region = process.env.S3_REGION || "";
+      const s3Endpoint = process.env.S3_ENDPOINT || "";
 
-      // Build EncodedFileOutput using the protobuf-es style.
-      // EgressClient expects EncodedOutputs which contains a list of outputs or a single one.
+      const gcpBucket = process.env.FIREBASE_STORAGE_BUCKET || "";
+      const gcpCredentials = process.env.GCP_CREDENTIALS || "";
+      
+      let outputCase: any = { case: undefined };
+
+      if (s3Bucket && s3AccessKey && s3SecretKey) {
+        outputCase = {
+          case: "s3",
+          value: new S3Upload({
+            accessKey: s3AccessKey,
+            secret: s3SecretKey,
+            region: s3Region,
+            endpoint: s3Endpoint,
+            bucket: s3Bucket,
+          }),
+        };
+      } else if (gcpBucket && gcpCredentials && gcpCredentials.includes("{")) {
+        outputCase = {
+          case: "gcp",
+          value: new GCPUpload({ credentials: gcpCredentials, bucket: gcpBucket }),
+        };
+      }
+
       const fileOutput = new EncodedFileOutput({
         fileType: EncodedFileType.MP4,
         filepath: `recordings/${roomName}-{time}.mp4`,
-        output: hasStorage
-          ? {
-              case: "gcp",
-              value: new GCPUpload({ credentials, bucket }),
-            }
-          : { case: undefined },
+        output: outputCase,
       });
 
       const egress = await egressClient.startRoomCompositeEgress(
