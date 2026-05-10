@@ -300,6 +300,7 @@ function CustomControlDock({
   isBlurred,
   setIsBlurred,
   isAdmin,
+  unreadChat,
 }: {
   isRecording: boolean;
   onStartRecording: () => void;
@@ -320,6 +321,7 @@ function CustomControlDock({
   isBlurred: boolean;
   setIsBlurred: (b: boolean) => void;
   isAdmin: boolean;
+  unreadChat: number;
 }) {
   const router = useRouter();
   const room = useRoomContext();
@@ -1074,6 +1076,7 @@ export default function RoomPage() {
           isBlurred={isBlurred}
           setIsBlurred={setIsBlurred}
           isAdmin={isAdmin}
+          unreadChat={unreadChat}
         />
 
         <RoomAudioRenderer />
