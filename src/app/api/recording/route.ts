@@ -60,8 +60,8 @@ export async function POST(req: NextRequest) {
       }
 
       const fileOutput = new EncodedFileOutput({
-        fileType: EncodedFileType.MP4,
-        filepath: `recordings/${roomName}-{time}.mp4`,
+        fileType: EncodedFileType.OGG,
+        filepath: `recordings/${roomName}-{time}.ogg`,
         output: outputCase,
       });
 
@@ -69,6 +69,9 @@ export async function POST(req: NextRequest) {
         roomName,
         {
           file: fileOutput,
+        },
+        {
+          audioOnly: true,
         }
       );
 
