@@ -25,13 +25,11 @@ export async function POST(req: NextRequest) {
     if (event.event === "participant_joined") {
       const { room, participant } = event;
       if (room && participant) {
-        const docRef = adminDb
-          .collection("rooms")
-          .doc(room.name)
-          .collection("attendance")
-          .doc(participant.sid);
+        // Use a flat collection for easier querying and better performance
+        const docRef = adminDb.collection("attendance").doc(`${room.name}_${participant.sid}`);
 
         await docRef.set({
+          roomId: room.name,
           identity: participant.identity,
           name: participant.name || participant.identity || "Unknown",
           joinedAt: admin.firestore.Timestamp.fromDate(eventTime),
@@ -46,11 +44,7 @@ export async function POST(req: NextRequest) {
     else if (event.event === "participant_left") {
       const { room, participant } = event;
       if (room && participant) {
-        const docRef = adminDb
-          .collection("rooms")
-          .doc(room.name)
-          .collection("attendance")
-          .doc(participant.sid);
+        const docRef = adminDb.collection("attendance").doc(`${room.name}_${participant.sid}`);
 
         // Fetch to calculate duration
         const doc = await docRef.get();

@@ -17,7 +17,7 @@ import {
   Video
 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collectionGroup, getDocs, query, orderBy, limit } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
@@ -46,12 +46,10 @@ export default function AttendancePage() {
     }
 
     if (isAdmin) {
-      const fetchAttendance = async () => {
-        try {
-          // Use a collectionGroup query to get attendance across all rooms
-        const q = query(collectionGroup(db, "attendance"));
-        const snapshot = await getDocs(q);
-        
+      // Use a flat collection query for real-time attendance updates
+      const q = query(collection(db, "attendance"), orderBy("joinedAt", "desc"), limit(100));
+      
+      const unsubscribe = onSnapshot(q, (snapshot) => {
         const fetchedRecords: AttendanceRecord[] = [];
         snapshot.forEach((doc) => {
           const data = doc.data();
@@ -59,29 +57,21 @@ export default function AttendancePage() {
             id: doc.id,
             identity: data.identity,
             name: data.name,
-            roomId: doc.ref.parent.parent?.id || "Unknown Room",
+            roomId: data.roomId || "Unknown Room",
             joinedAt: data.joinedAt ? data.joinedAt.toDate() : null,
             leftAt: data.leftAt ? data.leftAt.toDate() : null,
             durationSeconds: data.durationSeconds || 0,
           });
         });
 
-        // Sort locally by joinedAt descending to avoid needing a complex Firestore index initially
-        fetchedRecords.sort((a, b) => {
-          const timeA = a.joinedAt ? a.joinedAt.getTime() : 0;
-          const timeB = b.joinedAt ? b.joinedAt.getTime() : 0;
-          return timeB - timeA;
-        });
-
         setRecords(fetchedRecords);
-      } catch (error) {
-        console.error("Error fetching attendance:", error);
-      } finally {
         setLoading(false);
-      }
-    };
+      }, (error) => {
+        console.error("Error fetching attendance:", error);
+        setLoading(false);
+      });
 
-      fetchAttendance();
+      return () => unsubscribe();
     }
   }, [isAdmin, authLoading, router]);
 
