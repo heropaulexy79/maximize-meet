@@ -579,13 +579,18 @@ function CustomControlDock({
                 variant="ghost"
                 size="icon"
                 onClick={() => setChatOpen(!chatOpen)}
-                className={`w-12 h-12 rounded-full transition-all ${
+                className={`relative w-12 h-12 rounded-full transition-all ${
                   chatOpen 
                     ? "bg-primary/20 text-primary" 
                     : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
                 }`}
               >
                 <MessageSquare className="w-5 h-5" />
+                {unreadChat > 0 && !chatOpen && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center animate-bounce">
+                    {unreadChat > 9 ? "9+" : unreadChat}
+                  </span>
+                )}
               </Button>
             </TooltipTrigger>
             <TooltipContent>Chat</TooltipContent>
@@ -749,6 +754,7 @@ export default function RoomPage() {
   const [isBlurred, setIsBlurred] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [egressId, setEgressId] = useState<string | null>(null);
+  const [unreadChat, setUnreadChat] = useState(0);
   const router = useRouter();
 
 
@@ -1086,6 +1092,7 @@ export default function RoomPage() {
         <ChatSidebar 
           open={chatOpen}
           onClose={() => setChatOpen(false)}
+          onUnreadChange={setUnreadChat}
         />
 
         <InteractionsSidebar

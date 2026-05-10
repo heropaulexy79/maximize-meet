@@ -3,25 +3,72 @@
 import { useChat } from "@livekit/components-react";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, X, MessageSquare, User } from "lucide-react";
+import { Send, X, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { toast } from "sonner";
 
 export function ChatSidebar({
   open,
   onClose,
+  onUnreadChange,
 }: {
   open: boolean;
   onClose: () => void;
+  onUnreadChange?: (count: number) => void;
 }) {
   const { chatMessages, send } = useChat();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
+  const [unread, setUnread] = useState(0);
 
+  // Detect new incoming messages
+  useEffect(() => {
+    const currentCount = chatMessages.length;
+    const prevCount = prevCountRef.current;
+
+    if (currentCount > prevCount) {
+      const newMsgs = chatMessages.slice(prevCount);
+      newMsgs.forEach((msg) => {
+        const senderName = msg.from?.name || msg.from?.identity || "Someone";
+        const preview = msg.message.length > 50 ? msg.message.slice(0, 50) + "…" : msg.message;
+
+        // Always show toast (even to the sender's own session it's a new message for others)
+        // Only show toast if chat is closed — otherwise they're already reading it
+        if (!open) {
+          toast(`💬 ${senderName}`, {
+            description: preview,
+            action: {
+              label: "Open Chat",
+              onClick: () => onClose(), // triggers parent to open
+            },
+            duration: 5000,
+          });
+          setUnread((u) => {
+            const next = u + 1;
+            onUnreadChange?.(next);
+            return next;
+          });
+        }
+      });
+    }
+
+    prevCountRef.current = currentCount;
+  }, [chatMessages, open]);
+
+  // Clear unread when chat is opened
+  useEffect(() => {
+    if (open) {
+      setUnread(0);
+      onUnreadChange?.(0);
+    }
+  }, [open]);
+
+  // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
+  }, [chatMessages, open]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +110,7 @@ export function ChatSidebar({
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1 p-6">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6 scroll-smooth">
             <div className="space-y-6 pb-4">
               {chatMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center pt-20 text-center space-y-4">
@@ -96,7 +143,7 @@ export function ChatSidebar({
               )}
               <div ref={messagesEndRef} />
             </div>
-          </ScrollArea>
+          </div>
 
           {/* Input */}
           <div className="p-6 border-t border-white/5 bg-black/40">
@@ -122,3 +169,4 @@ export function ChatSidebar({
     </AnimatePresence>
   );
 }
+
