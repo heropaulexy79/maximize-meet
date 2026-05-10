@@ -12,6 +12,7 @@ import "@livekit/components-styles";
 import { Track, RoomEvent } from "livekit-client";
 import { useAuth } from "@/context/AuthContext";
 import { useParams, useRouter } from "next/navigation";
+import { useWakeLock } from "@/hooks/useWakeLock";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic,
@@ -739,7 +740,8 @@ function ParticipantEventNotifier() {
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
-export default function RoomPage() {
+  // Keep screen awake during the session
+  useWakeLock(true);
   const { roomId } = useParams();
   const { user, isAdmin } = useAuth();
   const [token, setToken] = useState<string>("");
