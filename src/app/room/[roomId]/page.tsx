@@ -298,6 +298,7 @@ function CustomControlDock({
   setInteractionsOpen,
   isBlurred,
   setIsBlurred,
+  isAdmin,
 }: {
   isRecording: boolean;
   onStartRecording: () => void;
@@ -317,6 +318,7 @@ function CustomControlDock({
   setInteractionsOpen: (open: boolean) => void;
   isBlurred: boolean;
   setIsBlurred: (b: boolean) => void;
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const room = useRoomContext();
@@ -451,14 +453,16 @@ function CustomControlDock({
             <Captions className="w-5 h-5" />
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={isRecording ? onStopRecording : onStartRecording}
-            className={`w-12 h-12 rounded-full transition-all border ${isRecording ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse" : "bg-white/5 border-white/10 text-white"}`}
-          >
-            {isRecording ? <CircleStop className="w-5 h-5" /> : <CircleDot className="w-5 h-5" />}
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={isRecording ? onStopRecording : onStartRecording}
+              className={`w-12 h-12 rounded-full transition-all border ${isRecording ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse" : "bg-white/5 border-white/10 text-white"}`}
+            >
+              {isRecording ? <CircleStop className="w-5 h-5" /> : <CircleDot className="w-5 h-5" />}
+            </Button>
+          )}
         </div>
 
         {/* Mobile 'More' Menu */}
@@ -738,7 +742,7 @@ function ParticipantEventNotifier() {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function RoomPage() {
   const { roomId } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [token, setToken] = useState<string>("");
   const [inviteOpen, setInviteOpen] = useState(false);
   const [participantsSidebarOpen, setParticipantsSidebarOpen] = useState(false);
@@ -1066,6 +1070,7 @@ export default function RoomPage() {
           setInteractionsOpen={setInteractionsOpen}
           isBlurred={isBlurred}
           setIsBlurred={setIsBlurred}
+          isAdmin={isAdmin}
         />
 
         <RoomAudioRenderer />
