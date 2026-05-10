@@ -355,7 +355,7 @@ function CustomControlDock({
       <div className="flex items-center gap-1.5 md:gap-3 mx-auto md:mx-0">
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <TrackToggle 
                 source={Track.Source.Microphone} 
                 showIcon={false}
@@ -374,7 +374,7 @@ function CustomControlDock({
 
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <TrackToggle 
                 source={Track.Source.Camera} 
                 showIcon={false}
