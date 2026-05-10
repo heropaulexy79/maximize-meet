@@ -19,6 +19,9 @@ import {
 import { db } from "@/lib/firebase";
 import { collectionGroup, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { format } from "date-fns";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 interface AttendanceRecord {
   id: string;
@@ -33,11 +36,19 @@ interface AttendanceRecord {
 export default function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isAdmin, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchAttendance = async () => {
-      try {
-        // Use a collectionGroup query to get attendance across all rooms
+    if (!authLoading && !isAdmin) {
+      router.push("/dashboard");
+      return;
+    }
+
+    if (isAdmin) {
+      const fetchAttendance = async () => {
+        try {
+          // Use a collectionGroup query to get attendance across all rooms
         const q = query(collectionGroup(db, "attendance"));
         const snapshot = await getDocs(q);
         
@@ -70,8 +81,9 @@ export default function AttendancePage() {
       }
     };
 
-    fetchAttendance();
-  }, []);
+      fetchAttendance();
+    }
+  }, [isAdmin, authLoading, router]);
 
   const formatDuration = (seconds: number) => {
     if (!seconds) return "0m";

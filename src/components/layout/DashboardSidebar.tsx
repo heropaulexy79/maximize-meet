@@ -18,19 +18,21 @@ import { auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Overview", href: "/dashboard" },
-  { icon: Video, label: "Sessions", href: "/dashboard/sessions" },
-  { icon: Users, label: "Attendance", href: "/dashboard/attendance" },
-  { icon: BookOpen, label: "Vault", href: "/vault" },
-  { icon: Users, label: "Cohorts", href: "/dashboard/cohorts" },
-  { icon: ShieldCheck, label: "Leadership", href: "/dashboard/leadership" },
+  { icon: LayoutDashboard, label: "Overview", href: "/dashboard", adminOnly: false },
+  { icon: Video, label: "Sessions", href: "/dashboard/sessions", adminOnly: false },
+  { icon: Users, label: "Attendance", href: "/dashboard/attendance", adminOnly: true },
+  { icon: BookOpen, label: "Vault", href: "/vault", adminOnly: false },
+  { icon: Users, label: "Cohorts", href: "/dashboard/cohorts", adminOnly: true },
+  { icon: ShieldCheck, label: "Leadership", href: "/dashboard/leadership", adminOnly: false },
 ];
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isAdmin } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -41,6 +43,8 @@ export function DashboardSidebar() {
       toast.error("Failed to log out");
     }
   };
+
+  const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
     <div className="w-64 h-screen border-r border-white/5 bg-black/40 backdrop-blur-3xl flex flex-col p-6 fixed left-0 top-0 z-40">
@@ -54,7 +58,7 @@ export function DashboardSidebar() {
       </Link>
 
       <div className="flex-1 space-y-2">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link key={item.href} href={item.href}>

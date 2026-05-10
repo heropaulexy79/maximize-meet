@@ -35,7 +35,7 @@ interface SessionData {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [activeCohortsCount, setActiveCohortsCount] = useState(0);
@@ -108,12 +108,14 @@ export default function DashboardPage() {
               </p>
             </div>
             <div className="flex gap-4">
-              <Link href="/dashboard/create">
-                <Button className="rounded-xl bg-primary hover:bg-primary/90 text-white px-6 h-12">
-                  <Plus className="w-5 h-5 mr-2" />
-                  New Session
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link href="/dashboard/create">
+                  <Button className="rounded-xl bg-primary hover:bg-primary/90 text-white px-6 h-12">
+                    <Plus className="w-5 h-5 mr-2" />
+                    New Session
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
 

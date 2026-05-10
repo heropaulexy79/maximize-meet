@@ -25,10 +25,11 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useEffect } from "react";
 
 export default function CreateSessionPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -37,6 +38,17 @@ export default function CreateSessionPage() {
     cohort: "",
     status: "scheduled" as "upcoming" | "scheduled" | "live",
   });
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      toast.error("Unauthorized access.");
+      router.push("/dashboard");
+    }
+  }, [isAdmin, authLoading, router]);
+
+  if (!isAdmin && !authLoading) {
+    return null; // Don't render the page while redirecting
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
