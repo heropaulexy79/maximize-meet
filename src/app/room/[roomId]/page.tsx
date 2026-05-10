@@ -973,18 +973,6 @@ export default function RoomPage() {
       data-lk-theme="default"
       onDisconnected={() => router.push("/dashboard")}
       className="h-screen bg-[#050505]"
-      options={{
-        adaptiveStream: true,
-        dynacast: true,
-        publishDefaults: {
-          videoEncoding: {
-            maxBitrate: 150_000, // Still strictly limits upload data to 150kbps
-            maxFramerate: 15,
-          },
-          simulcast: false,
-          stopMicTrackOnMute: true,
-        }
-      }}
     >
       <div className="relative h-screen flex flex-col">
         {/* ── Header ── */}
