@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocalParticipant, useParticipants } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Video, VideoOff, ShieldAlert, X, VolumeX } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, ShieldAlert, X, VolumeX, Hand } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
