@@ -1,12 +1,10 @@
 "use client";
 
 import { 
-  useParticipants, 
   ParticipantTile, 
-  TrackRefContext,
-  useParticipantContext,
+  useTracks,
 } from "@livekit/components-react";
-import { Participant, Track } from "livekit-client";
+import { Track } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { Hand } from "lucide-react";
 
@@ -15,17 +13,25 @@ export function MeetingGrid({
 }: {
   layout: "tiled" | "spotlight" | "sidebar";
 }) {
-  const participants = useParticipants();
+  // useTracks automatically manages the lifecycle of tracks and handles dynamic publishing/unpublishing
+  const tracks = useTracks(
+    [
+      { source: Track.Source.Camera, withPlaceholder: true },
+      { source: Track.Source.ScreenShare, withPlaceholder: false },
+    ],
+    { onlySubscribed: false }
+  );
 
   if (layout === "spotlight") {
-    // Only show active speaker or first participant
-    const spotlightParticipant = participants.find(p => p.isSpeaking) || participants[0];
+    // Spotlight the first speaking or just the first track
+    const spotlightTrack = tracks.find(t => t.participant.isSpeaking) || tracks[0];
+    
     return (
       <div className="w-full h-full flex items-center justify-center">
-        {spotlightParticipant && (
+        {spotlightTrack && (
           <div className="relative w-full max-w-5xl aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl flex items-center justify-center bg-zinc-900">
-            <ParticipantTile trackRef={{ participant: spotlightParticipant, source: Track.Source.Camera }} className="w-full h-full [&>video]:object-cover" />
-            <ParticipantOverlay participant={spotlightParticipant} />
+            <ParticipantTile trackRef={spotlightTrack} className="w-full h-full [&>video]:object-cover" />
+            <ParticipantOverlay participant={spotlightTrack.participant} />
           </div>
         )}
       </div>
@@ -34,22 +40,22 @@ export function MeetingGrid({
 
   return (
     <div className={`w-full h-full grid gap-4 p-4 auto-rows-fr ${
-      participants.length === 1 ? 'grid-cols-1' :
-      participants.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
-      participants.length <= 4 ? 'grid-cols-1 md:grid-cols-2' :
+      tracks.length === 1 ? 'grid-cols-1' :
+      tracks.length === 2 ? 'grid-cols-1 md:grid-cols-2' :
+      tracks.length <= 4 ? 'grid-cols-1 md:grid-cols-2' :
       'grid-cols-2 lg:grid-cols-3'
     }`}>
-      {participants.map((p) => (
-        <div key={p.sid} className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-zinc-900 flex items-center justify-center">
-          <ParticipantTile trackRef={{ participant: p, source: Track.Source.Camera }} className="w-full h-full [&>video]:object-cover" />
-          <ParticipantOverlay participant={p} />
+      {tracks.map((trackRef) => (
+        <div key={`${trackRef.participant.sid}-${trackRef.source}`} className="relative aspect-video rounded-2xl overflow-hidden border border-white/10 shadow-xl bg-zinc-900 flex items-center justify-center">
+          <ParticipantTile trackRef={trackRef} className="w-full h-full [&>video]:object-cover" />
+          <ParticipantOverlay participant={trackRef.participant} />
         </div>
       ))}
     </div>
   );
 }
 
-function ParticipantOverlay({ participant }: { participant: Participant }) {
+function ParticipantOverlay({ participant }: { participant: any }) {
   const metadata = participant.metadata ? JSON.parse(participant.metadata) : {};
   const isHandRaised = metadata.handRaised;
 

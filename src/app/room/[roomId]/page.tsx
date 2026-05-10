@@ -355,19 +355,17 @@ function CustomControlDock({
       <div className="flex items-center gap-1.5 md:gap-3 mx-auto md:mx-0">
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
-              <TrackToggle source={Track.Source.Microphone} showIcon={false}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                    !isMicrophoneEnabled
-                      ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
-                      : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                  }`}
-                >
-                  {isMicrophoneEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-                </Button>
+            <TooltipTrigger asChild>
+              <TrackToggle 
+                source={Track.Source.Microphone} 
+                showIcon={false}
+                className={`flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
+                  !isMicrophoneEnabled
+                    ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
+                    : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                }`}
+              >
+                {isMicrophoneEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
               </TrackToggle>
             </TooltipTrigger>
             <TooltipContent>{isMicrophoneEnabled ? "Mute Mic" : "Unmute Mic"}</TooltipContent>
@@ -376,19 +374,17 @@ function CustomControlDock({
 
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
-              <TrackToggle source={Track.Source.Camera} showIcon={false}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                    !isCameraEnabled
-                      ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
-                      : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                  }`}
-                >
-                  {isCameraEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-                </Button>
+            <TooltipTrigger asChild>
+              <TrackToggle 
+                source={Track.Source.Camera} 
+                showIcon={false}
+                className={`flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
+                  !isCameraEnabled
+                    ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
+                    : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
+                }`}
+              >
+                {isCameraEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
               </TrackToggle>
             </TooltipTrigger>
             <TooltipContent>{isCameraEnabled ? "Stop Video" : "Start Video"}</TooltipContent>
@@ -434,14 +430,12 @@ function CustomControlDock({
             <Smile className="w-5 h-5" />
           </Button>
 
-          <TrackToggle source={Track.Source.ScreenShare} showIcon={false}>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`w-12 h-12 rounded-full transition-all border ${isScreenShareEnabled ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 text-white"}`}
-            >
-              <MonitorUp className="w-5 h-5" />
-            </Button>
+          <TrackToggle 
+            source={Track.Source.ScreenShare} 
+            showIcon={false}
+            className={`flex items-center justify-center w-12 h-12 rounded-full transition-all border ${isScreenShareEnabled ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 text-white"}`}
+          >
+            <MonitorUp className="w-5 h-5" />
           </TrackToggle>
 
           <Button
