@@ -98,6 +98,8 @@ export function ParticipantsSidebar({ open, onClose, roomId }: ParticipantsSideb
               const isAudioMuted = !p.isMicrophoneEnabled;
               const isVideoMuted = !p.isCameraEnabled;
               const audioTrack = p.getTrackPublication(Track.Source.Microphone);
+              const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+              const isHandRaised = metadata.handRaised;
 
               return (
                 <div key={p.identity} className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
@@ -108,6 +110,7 @@ export function ParticipantsSidebar({ open, onClose, roomId }: ParticipantsSideb
                     <div className="truncate">
                       <div className="text-sm font-medium text-white truncate flex items-center gap-2">
                         {p.identity} {isLocal && <span className="text-xs text-muted-foreground">(You)</span>}
+                        {isHandRaised && <Hand className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-bounce" />}
                       </div>
                     </div>
                   </div>

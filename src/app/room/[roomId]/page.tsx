@@ -671,11 +671,40 @@ function ReactionOverlay() {
 // ─── Hand Status Manager ──────────────────────────────────────────────────────
 function HandStatusManager({ isHandRaised }: { isHandRaised: boolean }) {
   const room = useRoomContext();
+  
+  // Update local metadata when state changes
   useEffect(() => {
     if (room) {
       room.localParticipant.setMetadata(JSON.stringify({ handRaised: isHandRaised }));
     }
   }, [isHandRaised, room]);
+
+  // Listen for other participants raising their hands
+  useEffect(() => {
+    if (!room) return;
+
+    const handleMetadataChange = (metadata: string | undefined, participant: any) => {
+      if (!metadata) return;
+      try {
+        const data = JSON.parse(metadata);
+        if (data.handRaised && participant.identity !== room.localParticipant.identity) {
+          const name = participant.name || participant.identity || "Someone";
+          toast(`${name} raised their hand`, {
+            icon: "✋",
+            duration: 4000,
+          });
+        }
+      } catch (e) {
+        console.error("Error parsing participant metadata:", e);
+      }
+    };
+
+    room.on(RoomEvent.ParticipantMetadataChanged, handleMetadataChange);
+    return () => {
+      room.off(RoomEvent.ParticipantMetadataChanged, handleMetadataChange);
+    };
+  }, [room]);
+
   return null;
 }
 
