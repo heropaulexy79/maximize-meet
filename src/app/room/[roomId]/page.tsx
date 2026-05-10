@@ -740,6 +740,7 @@ function ParticipantEventNotifier() {
 }
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
+export default function RoomPage() {
   // Keep screen awake during the session
   useWakeLock(true);
   const { roomId } = useParams();
