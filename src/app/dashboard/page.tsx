@@ -67,11 +67,13 @@ export default function DashboardPage() {
 
     const fetchReplays = async () => {
       try {
+        console.log("[Dashboard] Fetching replays...");
         const replaysQ = query(collection(db, "replays"), orderBy("date", "desc"), limit(2));
         const snapshot = await getDocs(replaysQ);
+        console.log(`[Dashboard] Found ${snapshot.size} replays`);
         setRecentReplays(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
-        console.error("Error fetching replays:", error);
+        console.error("[Dashboard] Error fetching replays:", error);
       }
     };
     fetchReplays();
@@ -225,34 +227,53 @@ export default function DashboardPage() {
             <div className="space-y-10">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-heading font-bold text-white tracking-tight">Vault</h2>
-                <Link href="/vault" className="text-sm font-bold text-primary hover:underline">Explore</Link>
+                <Link href="/vault" className="text-sm font-bold text-primary hover:underline transition-colors">Explore All</Link>
               </div>
 
               <div className="space-y-6">
-                {recentReplays.map((replay) => (
-                  <Link href={`/vault/${replay.id}`} key={replay.id} className="block group">
-                    <Card className="overflow-hidden border-white/5 group-hover:border-primary/20 transition-all duration-500">
-                      <div className="aspect-[16/10] bg-zinc-900 relative flex items-center justify-center overflow-hidden">
-                        <img 
-                          src={replay.thumbnail || "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1000"} 
-                          alt={replay.title} 
-                          className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 group-hover:scale-110 transition-all duration-700"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
-                        <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center relative z-10 group-hover:scale-110 group-hover:bg-primary/20 group-hover:border-primary/50 transition-all duration-500">
-                          <PlayCircle className="w-8 h-8 text-white group-hover:text-primary transition-colors" />
-                        </div>
-                      </div>
-                      <div className="p-6 space-y-2">
-                        <h4 className="font-bold text-white text-lg group-hover:text-primary transition-colors truncate">{replay.title}</h4>
-                        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
-                          <span>{replay.date ? new Date(replay.date.toDate()).toLocaleDateString() : "Leadership Session"}</span>
-                          <span>{formatDuration(replay.durationSeconds)}</span>
-                        </div>
-                      </div>
-                    </Card>
-                  </Link>
-                ))}
+                {recentReplays.length === 0 ? (
+                  <div className="p-8 text-center bg-white/[0.02] border border-white/5 rounded-[2.5rem] space-y-4">
+                    <History className="w-10 h-10 text-muted-foreground/20 mx-auto" />
+                    <p className="text-sm text-muted-foreground font-medium">No recent replays found.</p>
+                  </div>
+                ) : (
+                  recentReplays.map((replay) => {
+                    let displayDate = "Leadership Session";
+                    try {
+                      if (replay.date) {
+                        const dateObj = replay.date.toDate ? replay.date.toDate() : new Date(replay.date);
+                        displayDate = dateObj.toLocaleDateString();
+                      }
+                    } catch (e) {
+                      console.error("Date formatting error:", e);
+                    }
+
+                    return (
+                      <Link href={`/vault/${replay.id}`} key={replay.id} className="block group">
+                        <Card className="overflow-hidden border-white/5 group-hover:border-primary/20 transition-all duration-500 bg-white/[0.01]">
+                          <div className="aspect-[16/10] bg-zinc-900 relative flex items-center justify-center overflow-hidden">
+                            <img 
+                              src={replay.thumbnail || "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1000"} 
+                              alt={replay.title} 
+                              className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 group-hover:scale-110 transition-all duration-700"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+                            <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center relative z-10 group-hover:scale-110 group-hover:bg-primary/20 group-hover:border-primary/50 transition-all duration-500">
+                              <PlayCircle className="w-8 h-8 text-white group-hover:text-primary transition-colors" />
+                            </div>
+                          </div>
+                          <div className="p-6 space-y-2">
+                            <h4 className="font-bold text-white text-lg group-hover:text-primary transition-colors truncate">{replay.title || "Untitled Session"}</h4>
+                            <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60 font-mono">
+                              <span>{displayDate}</span>
+                              <span>{formatDuration(replay.durationSeconds)}</span>
+                            </div>
+                          </div>
+                        </Card>
+                      </Link>
+                    );
+                  })
+                )}
               </div>
 
               {/* Upgrade Card */}
