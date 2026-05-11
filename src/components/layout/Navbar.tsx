@@ -60,13 +60,8 @@ export function Navbar() {
 
         <div className="flex items-center gap-6">
           <Link href="/login">
-            <Button variant="ghost" className="text-sm font-semibold text-muted-foreground hover:text-white hover:bg-white/5 px-6 rounded-full transition-all">
-              Log in
-            </Button>
-          </Link>
-          <Link href="/signup">
-            <Button variant="luxe" className="rounded-full px-8 h-11 font-bold tracking-wide">
-              Join the Nation
+            <Button variant="luxe" className="rounded-full px-10 h-12 font-bold tracking-wide shadow-xl shadow-primary/20">
+              Enter Academy
             </Button>
           </Link>
         </div>
