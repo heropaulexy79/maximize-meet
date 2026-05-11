@@ -337,117 +337,103 @@ function CustomControlDock({
     const data = encoder.encode(JSON.stringify({ type: "reaction", emoji }));
     await room.localParticipant.publishData(data, { reliable: true });
     setShowReactions(false);
-    // Also show locally
     window.dispatchEvent(new CustomEvent("local-reaction", { detail: { emoji } }));
   };
 
   return (
-    <div className="relative z-50 px-2 md:px-8 flex items-center justify-between bg-[#050505] border-t border-white/5 h-20 md:h-24 w-full">
-      {/* Left side info (Time) - Hidden on Mobile */}
-      <div className="hidden md:flex items-center gap-4 w-1/4">
-        <div className="text-white font-mono text-sm tracking-widest opacity-60">
-          {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </div>
-        <div className="h-4 w-px bg-white/10" />
-        <div className="text-white/60 text-sm font-outfit font-medium truncate">
-          Leadership Room
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-8 py-4 glass shadow-2xl rounded-[2.5rem] border-white/20">
+      {/* Session Info - Only on Desktop */}
+      <div className="hidden lg:flex items-center gap-4 border-r border-white/10 pr-6 mr-2">
+        <div className="flex flex-col">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Leadership Session</span>
+          <SessionTimer />
         </div>
       </div>
 
-      {/* Center Controls */}
-      <div className="flex items-center gap-1.5 md:gap-3 mx-auto md:mx-0">
+      {/* Main Controls */}
+      <div className="flex items-center gap-3">
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger asChild>
               <TrackToggle 
                 source={Track.Source.Microphone} 
                 showIcon={false}
-                className={`flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
+                className={cn(
+                  "flex items-center justify-center w-14 h-14 rounded-2xl transition-all border duration-300",
                   !isMicrophoneEnabled
-                    ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
+                    ? "bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20"
                     : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                }`}
+                )}
               >
-                {isMicrophoneEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                {isMicrophoneEnabled ? <Mic className="w-6 h-6" /> : <MicOff className="w-6 h-6" />}
               </TrackToggle>
             </TooltipTrigger>
-            <TooltipContent>{isMicrophoneEnabled ? "Mute Mic" : "Unmute Mic"}</TooltipContent>
+            <TooltipContent>{isMicrophoneEnabled ? "Mute" : "Unmute"}</TooltipContent>
           </Tooltip>
-        </TooltipProvider>
 
-        <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger asChild>
               <TrackToggle 
                 source={Track.Source.Camera} 
                 showIcon={false}
-                className={`flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
+                className={cn(
+                  "flex items-center justify-center w-14 h-14 rounded-2xl transition-all border duration-300",
                   !isCameraEnabled
-                    ? "bg-red-500 border-red-500 text-white hover:bg-red-600"
+                    ? "bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20"
                     : "bg-white/5 border-white/10 hover:bg-white/10 text-white"
-                }`}
+                )}
               >
-                {isCameraEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                {isCameraEnabled ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
               </TrackToggle>
             </TooltipTrigger>
             <TooltipContent>{isCameraEnabled ? "Stop Video" : "Start Video"}</TooltipContent>
           </Tooltip>
-        </TooltipProvider>
 
-        {/* Essential Mobile Controls */}
-        <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon"
                 onClick={toggleHand}
-                className={`w-10 h-10 md:w-12 md:h-12 rounded-full transition-all border ${
-                  isHandRaised ? "bg-amber-500 border-amber-500 text-black" : "bg-white/5 border-white/10 text-white"
-                }`}
+                className={cn(
+                  "w-14 h-14 rounded-2xl transition-all border duration-300",
+                  isHandRaised ? "bg-amber-500/20 border-amber-500/50 text-amber-500 shadow-lg shadow-amber-500/20" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                )}
               >
-                <Hand className="w-5 h-5" />
+                <Hand className="w-6 h-6" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Raise Hand</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
-        {/* Desktop-only secondary controls */}
-        <div className="hidden lg:flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsBlurred(!isBlurred)}
-            className={`w-12 h-12 rounded-full transition-all border ${isBlurred ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 text-white"}`}
-          >
-            <Sparkles className="w-5 h-5" />
-          </Button>
+        <Separator orientation="vertical" className="h-8 bg-white/10 mx-2" />
 
+        <div className="flex items-center gap-3">
+          {/* Reaction Button */}
           <div className="relative">
             <Button
               variant="ghost"
-              size="icon"
               onClick={() => setShowReactions(!showReactions)}
-              className={`w-12 h-12 rounded-full transition-all border ${showReactions ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 text-white"}`}
+              className={cn(
+                "w-14 h-14 rounded-2xl transition-all border duration-300",
+                showReactions ? "bg-primary/20 border-primary/50 text-primary" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+              )}
             >
-              <Smile className="w-5 h-5" />
+              <Smile className="w-6 h-6" />
             </Button>
-
             <AnimatePresence>
               {showReactions && (
                 <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  initial={{ opacity: 0, y: 10, scale: 0.9 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-[#0a0a0a]/95 border border-white/10 backdrop-blur-xl rounded-2xl p-2 flex gap-2 shadow-2xl z-50"
+                  exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                  className="absolute bottom-20 left-1/2 -translate-x-1/2 glass border border-white/20 rounded-[1.5rem] p-2 flex gap-1 shadow-2xl z-50"
                 >
                   {REACTIONS.map((r) => (
                     <button
                       key={r.label}
                       onClick={() => sendReaction(r.emoji)}
-                      className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-white/5 rounded-xl transition-colors"
-                      title={r.label}
+                      className="w-12 h-12 flex items-center justify-center text-3xl hover:bg-white/5 rounded-xl transition-all hover:scale-125"
                     >
                       {r.emoji}
                     </button>
@@ -457,170 +443,97 @@ function CustomControlDock({
             </AnimatePresence>
           </div>
 
-          <TrackToggle 
-            source={Track.Source.ScreenShare} 
-            showIcon={false}
-            className={`flex items-center justify-center w-12 h-12 rounded-full transition-all border ${isScreenShareEnabled ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 text-white"}`}
-          >
-            <MonitorUp className="w-5 h-5" />
-          </TrackToggle>
+          {/* Screen Share */}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TrackToggle 
+                  source={Track.Source.ScreenShare} 
+                  showIcon={false}
+                  className={cn(
+                    "flex items-center justify-center w-14 h-14 rounded-2xl transition-all border duration-300",
+                    isScreenShareEnabled ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/20" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                  )}
+                >
+                  <MonitorUp className="w-6 h-6" />
+                </TrackToggle>
+              </TooltipTrigger>
+              <TooltipContent>Present Screen</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowCaptions(!showCaptions)}
-            className={`w-12 h-12 rounded-full transition-all border ${showCaptions ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 text-white"}`}
-          >
-            <Captions className="w-5 h-5" />
-          </Button>
-
+          {/* Recording (Admin Only) */}
           {isAdmin && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={isRecording ? onStopRecording : onStartRecording}
-              className={`w-12 h-12 rounded-full transition-all border ${isRecording ? "bg-red-500/20 border-red-500/50 text-red-400 animate-pulse" : "bg-white/5 border-white/10 text-white"}`}
-            >
-              {isRecording ? <CircleStop className="w-5 h-5" /> : <CircleDot className="w-5 h-5" />}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    onClick={isRecording ? onStopRecording : onStartRecording}
+                    className={cn(
+                      "w-14 h-14 rounded-2xl transition-all border duration-300",
+                      isRecording ? "bg-red-500/20 border-red-500 text-red-500 animate-pulse" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                    )}
+                  >
+                    {isRecording ? <CircleStop className="w-6 h-6" /> : <CircleDot className="w-6 h-6" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{isRecording ? "Stop Recording" : "Record Session"}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
 
-        {/* Mobile 'More' Menu */}
-        <div className="lg:hidden relative">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowLayoutMenu(!showLayoutMenu)}
-            className="w-10 h-10 rounded-full bg-white/5 border border-white/10 text-white"
-          >
-            <MoreVertical className="w-5 h-5" />
-          </Button>
-          
-          <AnimatePresence>
-            {showLayoutMenu && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute bottom-16 right-0 w-48 bg-zinc-900/95 border border-white/10 backdrop-blur-xl rounded-2xl p-2 shadow-2xl z-50 overflow-hidden"
-              >
-                <button onClick={() => { setShowCaptions(!showCaptions); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
-                  <Captions className="w-4 h-4" /> {showCaptions ? "Hide" : "Show"} Captions
-                </button>
-                <button onClick={() => { setIsBlurred(!isBlurred); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
-                  <Sparkles className="w-4 h-4" /> {isBlurred ? "Disable" : "Enable"} Blur
-                </button>
-                <button onClick={() => { setShowReactions(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
-                  <Smile className="w-4 h-4" /> Send Reaction
-                </button>
-                <button onClick={() => { setChatOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5 border-t border-white/5 mt-1 pt-3">
-                  <MessageSquare className="w-4 h-4" /> Open Chat
-                </button>
-                <button onClick={() => { setParticipantsSidebarOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
-                  <Users className="w-4 h-4" /> Participants
-                </button>
-                <button onClick={() => { setInteractionsOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5">
-                  <HelpCircle className="w-4 h-4" /> Activities
-                </button>
-                <button onClick={() => { setInviteOpen(true); setShowLayoutMenu(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs text-white/70 hover:bg-white/5 border-t border-white/5 mt-1 pt-3">
-                  <UserPlus className="w-4 h-4" /> Invite People
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <Separator orientation="vertical" className="h-8 bg-white/10 mx-2" />
+
+        {/* Sidebars Controls */}
+        <div className="flex items-center gap-3">
+          <TooltipProvider>
+            {[
+              { icon: Users, open: participantsSidebarOpen, setOpen: setParticipantsSidebarOpen, label: "Participants", count: 0 },
+              { icon: MessageSquare, open: chatOpen, setOpen: setChatOpen, label: "Chat", count: unreadChat },
+              { icon: Sparkles, open: isBlurred, setOpen: setIsBlurred, label: "Visual Effects", count: 0 },
+              { icon: HelpCircle, open: interactionsOpen, setOpen: setInteractionsOpen, label: "Activities", count: 0 },
+            ].map((item, i) => (
+              <Tooltip key={i}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    onClick={() => item.setOpen(!item.open)}
+                    className={cn(
+                      "relative w-14 h-14 rounded-2xl transition-all border duration-300",
+                      item.open ? "bg-primary/20 border-primary/50 text-primary shadow-lg shadow-primary/10" : "bg-white/5 border-white/10 text-white hover:bg-white/10"
+                    )}
+                  >
+                    <item.icon className="w-6 h-6" />
+                    {item.count > 0 && (
+                      <span className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center animate-bounce border-2 border-background">
+                        {item.count}
+                      </span>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{item.label}</TooltipContent>
+              </Tooltip>
+            ))}
+          </TooltipProvider>
         </div>
 
-        <div className="mx-1 md:mx-2" />
+        <Separator orientation="vertical" className="h-8 bg-white/10 mx-2" />
 
-        <Button
-          onClick={() => router.push("/dashboard")}
-          className="w-12 md:w-16 h-10 rounded-full bg-red-500 hover:bg-red-600 text-white transition-all shadow-lg shadow-red-500/20 flex items-center justify-center shrink-0"
-        >
-          <LogOut className="w-5 h-5" />
-        </Button>
-      </div>
-
-      {/* Right side - Google Meet style actions */}
-      <div className="hidden md:flex items-center gap-2 w-1/4 justify-end">
+        {/* Leave Button */}
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger>
+            <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setInviteOpen(true)}
-                className="w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
+                variant="destructive"
+                onClick={() => router.push("/dashboard")}
+                className="w-16 h-14 rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 active:scale-95 transition-all"
               >
-                <UserPlus className="w-5 h-5" />
+                <LogOut className="w-6 h-6" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Invite People</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)}
-                className={`w-12 h-12 rounded-full transition-all ${
-                  participantsSidebarOpen 
-                    ? "bg-primary/20 text-primary" 
-                    : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
-                }`}
-              >
-                <Users className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Participants</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setInteractionsOpen(!interactionsOpen)}
-                className={`w-12 h-12 rounded-full transition-all ${
-                  interactionsOpen 
-                    ? "bg-primary/20 text-primary" 
-                    : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
-                }`}
-              >
-                <HelpCircle className="w-5 h-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Activities (Polls & Q&A)</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setChatOpen(!chatOpen)}
-                className={`relative w-12 h-12 rounded-full transition-all ${
-                  chatOpen 
-                    ? "bg-primary/20 text-primary" 
-                    : "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
-                }`}
-              >
-                <MessageSquare className="w-5 h-5" />
-                {unreadChat > 0 && !chatOpen && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center animate-bounce">
-                    {unreadChat > 9 ? "9+" : unreadChat}
-                  </span>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Chat</TooltipContent>
+            <TooltipContent>Leave Session</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -1058,69 +971,114 @@ export default function RoomPage() {
                   Live Session
                 </h3>
                 <p className="text-muted-foreground text-xs font-mono">{roomId}</p>
-              </div>
-              <div className="h-8 w-px bg-white/10 mx-2" />
-              <SessionTimer />
+    <div className="relative h-screen w-full bg-luxe-gradient overflow-hidden flex flex-col font-sans">
+      <LiveKitRoom
+        serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+        token={token}
+        connect={true}
+        video={true}
+        audio={true}
+        className="flex-1 flex flex-col relative"
+      >
+        <RoomAudioRenderer />
+        
+        {/* Managers & Notifiers */}
+        <BlurManager isBlurred={isBlurred} />
+        <HandStatusManager isHandRaised={isHandRaised} />
+        <ParticipantEventNotifier />
+        
+        {/* Top Header Overlay */}
+        <div className="absolute top-0 left-0 right-0 z-40 p-8 flex items-center justify-between pointer-events-none">
+          <div className="flex items-center gap-5 pointer-events-auto">
+            <div className="w-12 h-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group">
+              <Sparkles className="w-7 h-7 text-primary-foreground group-hover:scale-110 transition-transform" />
             </div>
-            {isRecording && (
-              <Badge className="bg-red-500/10 text-red-400 border-red-500/20 px-3 py-1 rounded-full animate-pulse flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                REC
-              </Badge>
-            )}
+            <div>
+              <h2 className="text-white font-bold tracking-tight text-xl leading-tight">Leadership Masterclass</h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em]">Live Academy Session</span>
+              </div>
+            </div>
           </div>
-
-          {/* Right Actions - Moved to bottom bar */}
-          <div className="flex items-center gap-3 pointer-events-auto invisible md:visible">
-            {/* Empty space to keep layout balanced if needed, or just remove */}
+          
+          <div className="flex items-center gap-4 pointer-events-auto">
+            <div className="flex -space-x-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="w-10 h-10 rounded-full border-2 border-background bg-zinc-800 flex items-center justify-center overflow-hidden">
+                  <User className="w-5 h-5 text-white/40" />
+                </div>
+              ))}
+              <div className="w-10 h-10 rounded-full border-2 border-background bg-primary/20 backdrop-blur-md flex items-center justify-center text-[10px] font-bold text-primary">
+                +12
+              </div>
+            </div>
+            <Badge variant="outline" className="bg-white/5 border-white/10 text-white/80 px-5 py-2 rounded-full backdrop-blur-md font-bold tracking-wide">
+              Cohort Alpha
+            </Badge>
           </div>
         </div>
 
-        {/* ── Video Grid ── */}
-        <div className={`flex-1 flex items-center justify-center p-2 md:p-4 pt-16 md:pt-20 pb-4 transition-all duration-300 ${participantsSidebarOpen || chatOpen || interactionsOpen ? 'lg:mr-96' : ''}`}>
-          <MeetingGrid layout={layout} />
-          
-          {/* Live Captions Overlay */}
-          <AnimatePresence>
-            {showCaptions && captions.length > 0 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="absolute bottom-32 left-1/2 -translate-x-1/2 w-full max-w-2xl px-6 pointer-events-none z-40"
-              >
-                <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
-                  <div className="space-y-3">
-                    {captions.map((cap) => (
-                      <motion.div 
-                        key={cap.id} 
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="flex gap-3"
-                      >
-                        <span className="text-primary font-bold text-xs uppercase min-w-[60px]">{cap.user}</span>
-                        <p className="text-white/90 text-sm leading-relaxed font-outfit">{cap.text}</p>
-                      </motion.div>
-                    ))}
+        {/* Main Content Area */}
+        <div className="flex-1 flex overflow-hidden p-6 pt-28 pb-36">
+          <div className="flex-1 relative rounded-[3.5rem] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-md shadow-2xl group/grid">
+            <MeetingGrid 
+              layout={layout} 
+              isHandRaised={isHandRaised}
+            />
+            
+            {/* Reaction Layer */}
+            <ReactionOverlay />
+
+            {/* Captions Overlay */}
+            <AnimatePresence>
+              {showCaptions && (
+                <motion.div
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: 20, opacity: 0 }}
+                  className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl px-8 pointer-events-none z-40"
+                >
+                  <div className="glass rounded-2xl p-6 shadow-2xl border-primary/20">
+                    <p className="text-primary font-bold text-[10px] uppercase tracking-widest mb-2">Live Transcript</p>
+                    <p className="text-white/90 text-base leading-relaxed font-medium">
+                      "Welcome everyone to today's leadership session. We are focusing on transformational coaching strategies..."
+                    </p>
                   </div>
-                </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Sidebars */}
+          <AnimatePresence>
+            {(participantsSidebarOpen || chatOpen || interactionsOpen) && (
+              <motion.div
+                initial={{ x: 400, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 400, opacity: 0 }}
+                className="w-[400px] ml-8 h-full glass rounded-[3.5rem] overflow-hidden shadow-2xl border-white/10 relative"
+              >
+                {participantsSidebarOpen && <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} />}
+                {chatOpen && <ChatSidebar onClose={() => setChatOpen(false)} onUnreadChange={setUnreadChat} />}
+                {interactionsOpen && <InteractionsSidebar onClose={() => setInteractionsOpen(false)} />}
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* ── Control Dock ── */}
+        {/* Floating Controls Dock */}
         <CustomControlDock
           isRecording={isRecording}
-          onStartRecording={startRecording}
-          onStopRecording={stopRecording}
+          onStartRecording={handleStartRecording}
+          onStopRecording={handleStopRecording}
           setInviteOpen={setInviteOpen}
           setParticipantsSidebarOpen={setParticipantsSidebarOpen}
           participantsSidebarOpen={participantsSidebarOpen}
           chatOpen={chatOpen}
           setChatOpen={setChatOpen}
           isHandRaised={isHandRaised}
-          toggleHand={toggleHand}
+          toggleHand={() => setIsHandRaised(!isHandRaised)}
           layout={layout}
           setLayout={setLayout}
           showCaptions={showCaptions}
@@ -1133,38 +1091,17 @@ export default function RoomPage() {
           unreadChat={unreadChat}
         />
 
-        <RoomAudioRenderer />
-
-        {/* ── Invite Dialog ── */}
         <InviteDialog
           open={inviteOpen}
           onClose={() => setInviteOpen(false)}
           roomId={roomId as string}
         />
 
-        {/* ── Sidebars ── */}
-        <ParticipantsSidebar
-          open={participantsSidebarOpen}
-          onClose={() => setParticipantsSidebarOpen(false)}
-          roomId={roomId as string}
-        />
-
-        <ChatSidebar 
-          open={chatOpen}
-          onClose={() => setChatOpen(false)}
-          onUnreadChange={setUnreadChat}
-        />
-
-        <InteractionsSidebar
-          open={interactionsOpen}
-          onClose={() => setInteractionsOpen(false)}
-        />
-
         <ReactionOverlay />
         <BlurManager isBlurred={isBlurred} />
         <HandStatusManager isHandRaised={isHandRaised} />
         <ParticipantEventNotifier />
-      </div>
-    </LiveKitRoom>
+      </LiveKitRoom>
+    </div>
   );
 }

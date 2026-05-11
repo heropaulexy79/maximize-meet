@@ -1,47 +1,71 @@
 "use client";
 
+import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function Navbar() {
+  const [isScrolled, setIsScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
     <motion.header
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center p-6"
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-500 flex justify-center",
+        isScrolled ? "p-4" : "p-8"
+      )}
     >
-      <nav className="flex items-center justify-between w-full max-w-7xl px-6 py-3 rounded-full border border-white/10 bg-black/50 backdrop-blur-xl">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-primary-foreground" />
+      <nav className={cn(
+        "flex items-center justify-between w-full max-w-5xl px-8 py-3 rounded-[2rem] transition-all duration-500",
+        isScrolled 
+          ? "glass shadow-2xl shadow-black/50 border-white/10" 
+          : "bg-transparent border-transparent"
+      )}>
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-500">
+            <Sparkles className="w-6 h-6 text-primary-foreground" />
           </div>
-          <span className="font-outfit text-xl font-bold tracking-tight text-white">
-            MAXIMIZE <span className="text-primary/80 font-medium text-lg uppercase tracking-widest ml-1">Academy</span>
-          </span>
+          <div className="flex flex-col">
+            <span className="font-heading text-lg font-bold tracking-[0.1em] text-white leading-none">
+              MAXIMIZE
+            </span>
+            <span className="text-[9px] uppercase tracking-[0.2em] text-primary font-bold mt-1">
+              Nation Academy
+            </span>
+          </div>
         </Link>
 
-        <div className="hidden md:flex items-center gap-8">
-          <Link href="#cohorts" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors">
-            Cohorts
-          </Link>
-          <Link href="#leadership" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors">
-            Leadership
-          </Link>
-          <Link href="#vault" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors">
-            Vault
-          </Link>
+        <div className="hidden md:flex items-center gap-10">
+          {["Cohorts", "Leadership", "Vault"].map((item) => (
+            <Link 
+              key={item}
+              href={`#${item.toLowerCase()}`} 
+              className="text-sm font-semibold text-muted-foreground hover:text-primary transition-all duration-300 relative group"
+            >
+              {item}
+              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
+            </Link>
+          ))}
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <Link href="/login">
-            <Button variant="ghost" className="text-sm font-medium text-muted-foreground hover:text-white">
+            <Button variant="ghost" className="text-sm font-semibold text-muted-foreground hover:text-white hover:bg-white/5 px-6 rounded-full transition-all">
               Log in
             </Button>
           </Link>
           <Link href="/signup">
-            <Button className="rounded-full px-6 bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Button variant="luxe" className="rounded-full px-8 h-11 font-bold tracking-wide">
               Join the Nation
             </Button>
           </Link>

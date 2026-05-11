@@ -47,37 +47,53 @@ export function DashboardSidebar() {
   const visibleMenuItems = menuItems.filter(item => !item.adminOnly || isAdmin);
 
   return (
-    <div className="w-64 h-screen border-r border-white/5 bg-black/40 backdrop-blur-3xl flex flex-col p-6 fixed left-0 top-0 z-40">
-      <Link href="/dashboard" className="flex items-center gap-3 mb-10 px-2">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <Sparkles className="w-5 h-5 text-primary-foreground" />
-        </div>
-        <span className="font-outfit text-xl font-bold tracking-tight text-white">
-          MAXIMIZE
-        </span>
-      </Link>
+    <div className="w-72 h-screen glass border-r border-white/5 flex flex-col fixed left-0 top-0 z-40 overflow-hidden">
+      {/* Background Accent */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-transparent" />
+      
+      <div className="p-8">
+        <Link href="/dashboard" className="flex items-center gap-3 px-2 group">
+          <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform duration-500">
+            <Sparkles className="w-6 h-6 text-primary-foreground" />
+          </div>
+          <div className="flex flex-col">
+            <span className="font-heading text-xl font-bold tracking-[0.2em] text-white leading-none">
+              MAXIMIZE
+            </span>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-primary font-bold mt-1">
+              Nation Academy
+            </span>
+          </div>
+        </Link>
+      </div>
 
-      <div className="flex-1 space-y-2">
+      <div className="flex-1 px-4 space-y-1.5 overflow-y-auto custom-scrollbar">
         {visibleMenuItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link key={item.href} href={item.href}>
               <div className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                "flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 group relative",
                 isActive 
-                  ? "bg-primary/10 text-primary border border-primary/20" 
-                  : "text-muted-foreground hover:text-white hover:bg-white/5"
+                  ? "text-primary" 
+                  : "text-muted-foreground hover:text-white hover:bg-white/[0.03]"
               )}>
-                <item.icon className={cn(
-                  "w-5 h-5",
-                  isActive ? "text-primary" : "text-muted-foreground group-hover:text-white"
-                )} />
-                <span className="font-medium">{item.label}</span>
                 {isActive && (
                   <motion.div
-                    layoutId="active-pill"
-                    className="ml-auto w-1.5 h-1.5 rounded-full bg-primary"
+                    layoutId="sidebar-active"
+                    className="absolute inset-0 bg-primary/5 border border-primary/10 rounded-2xl"
+                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
+                )}
+                
+                <item.icon className={cn(
+                  "w-5 h-5 relative z-10 transition-transform duration-300 group-hover:scale-110",
+                  isActive ? "text-primary" : "text-muted-foreground group-hover:text-white"
+                )} />
+                <span className="font-medium tracking-wide relative z-10">{item.label}</span>
+                
+                {isActive && (
+                  <div className="absolute right-4 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_10px_var(--color-primary)]" />
                 )}
               </div>
             </Link>
@@ -85,19 +101,19 @@ export function DashboardSidebar() {
         })}
       </div>
 
-      <div className="pt-6 mt-6 border-t border-white/5 space-y-2">
+      <div className="p-6 mt-auto border-t border-white/5 space-y-1">
         <Link href="/profile">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-white hover:bg-white/5 transition-all">
-            <Settings className="w-5 h-5" />
-            <span className="font-medium">Settings</span>
+          <div className="flex items-center gap-4 px-5 py-3.5 rounded-2xl text-muted-foreground hover:text-white hover:bg-white/[0.03] transition-all group">
+            <Settings className="w-5 h-5 group-hover:rotate-45 transition-transform duration-500" />
+            <span className="font-medium tracking-wide">Settings</span>
           </div>
         </Link>
         <button 
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/5 transition-all"
+          className="w-full flex items-center gap-4 px-5 py-3.5 rounded-2xl text-muted-foreground hover:text-red-400 hover:bg-red-400/5 transition-all group"
         >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium">Sign Out</span>
+          <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+          <span className="font-medium tracking-wide">Sign Out</span>
         </button>
       </div>
     </div>

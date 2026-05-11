@@ -48,7 +48,6 @@ export default function DashboardPage() {
         const res = await fetch("/api/sessions");
         const data = await res.json();
         if (data.sessions) {
-          // Limit to 4 for overview
           setSessions(data.sessions.slice(0, 4));
         }
       } catch (error) {
@@ -60,7 +59,6 @@ export default function DashboardPage() {
 
     fetchSessions();
 
-    // Fetch recent replays
     const fetchReplays = async () => {
       try {
         const replaysQ = query(collection(db, "replays"), orderBy("date", "desc"), limit(2));
@@ -72,7 +70,6 @@ export default function DashboardPage() {
     };
     fetchReplays();
 
-    // 2. Listen for active cohorts count
     const cohortsQ = query(collection(db, "cohorts"));
     const unsubCohorts = onSnapshot(cohortsQ, (snapshot) => {
       setActiveCohortsCount(snapshot.size);
@@ -92,129 +89,125 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-black">
+    <div className="flex min-h-screen bg-luxe-gradient overflow-hidden">
       <DashboardSidebar />
       
-      <main className="flex-1 ml-64 p-10">
-        <div className="max-w-6xl mx-auto space-y-10">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-outfit font-bold text-white mb-2">
-                Good afternoon, {user?.displayName?.split(" ")[0] || "Leader"}
+      <main className="flex-1 ml-72 p-12 overflow-y-auto">
+        <div className="max-w-6xl mx-auto space-y-16">
+          {/* Header Section */}
+          <div className="flex items-end justify-between">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
+                <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Academy Live</span>
+              </div>
+              <h1 className="text-5xl font-heading font-bold text-white tracking-tight">
+                Welcome back, <span className="text-primary">{user?.displayName?.split(" ")[0] || "Leader"}</span>
               </h1>
-              <p className="text-muted-foreground text-lg">
-                Your next session starts soon. Are you ready to lead?
+              <p className="text-muted-foreground text-lg max-w-xl font-medium opacity-80">
+                Your next leadership session is scheduled for today. Ready to transform?
               </p>
             </div>
-            <div className="flex gap-4">
-              {isAdmin && (
-                <Link href="/dashboard/create">
-                  <Button className="rounded-xl bg-primary hover:bg-primary/90 text-white px-6 h-12">
-                    <Plus className="w-5 h-5 mr-2" />
-                    New Session
-                  </Button>
+            {isAdmin && (
+              <Link href="/dashboard/create">
+                <Button variant="luxe" className="rounded-2xl h-14 px-8 text-base font-bold shadow-2xl shadow-primary/20">
+                  <Plus className="w-5 h-5 mr-3" />
+                  New Session
+                </Button>
+              </Link>
+            )}
+          </div>
+
+          {/* Quick Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { icon: Video, label: "Upcoming Sessions", value: "12", color: "primary" },
+              { icon: Users, label: "Active Cohorts", value: activeCohortsCount.toString(), color: "indigo" },
+              { icon: Clock, label: "Learning Hours", value: "84h", color: "amber" },
+            ].map((stat, idx) => (
+              <Card key={idx} className="relative group overflow-hidden border-white/5 hover:border-white/10">
+                <div className="p-8 flex items-center gap-6 relative z-10">
+                  <div className={cn(
+                    "w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110",
+                    stat.color === "primary" ? "bg-primary/10 text-primary" :
+                    stat.color === "indigo" ? "bg-indigo-500/10 text-indigo-400" :
+                    "bg-amber-500/10 text-amber-400"
+                  )}>
+                    <stat.icon className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+                    <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{stat.label}</div>
+                  </div>
+                </div>
+                <div className={cn(
+                  "absolute -bottom-10 -right-10 w-32 h-32 blur-[60px] rounded-full opacity-20",
+                  stat.color === "primary" ? "bg-primary" :
+                  stat.color === "indigo" ? "bg-indigo-500" :
+                  "bg-amber-500"
+                )} />
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+            {/* Main Content: Sessions */}
+            <div className="lg:col-span-2 space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-3xl font-heading font-bold text-white tracking-tight">Active Sessions</h2>
+                <Link href="/dashboard/sessions" className="group flex items-center gap-2 text-sm font-bold text-primary">
+                  Explore All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
-              )}
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="bg-white/[0.03] border-white/5 backdrop-blur-xl rounded-[2rem] p-6 border-l-4 border-l-primary">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-primary/10">
-                  <Video className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-white">12</div>
-                  <div className="text-sm text-muted-foreground uppercase tracking-widest">Upcoming Sessions</div>
-                </div>
-              </div>
-            </Card>
-            <Card className="bg-white/[0.03] border-white/5 backdrop-blur-xl rounded-[2rem] p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-indigo-500/10">
-                  <Users className="w-6 h-6 text-indigo-400" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-white">{activeCohortsCount}</div>
-                  <div className="text-sm text-muted-foreground uppercase tracking-widest">Active Cohorts</div>
-                </div>
-              </div>
-            </Card>
-            <Card className="bg-white/[0.03] border-white/5 backdrop-blur-xl rounded-[2rem] p-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-amber-500/10">
-                  <Clock className="w-6 h-6 text-amber-400" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-white">84h</div>
-                  <div className="text-sm text-muted-foreground uppercase tracking-widest">Learning Hours</div>
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-            {/* Live/Upcoming Sessions */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="flex items-center justify-between px-2">
-                <h2 className="text-2xl font-outfit font-bold text-white">Academy Sessions</h2>
-                <Link href="/dashboard/sessions" className="text-sm text-primary hover:underline font-medium">View All</Link>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {sessions.length === 0 ? (
-                  <div className="text-center p-10 bg-white/[0.02] border border-white/5 rounded-[2rem]">
-                    <Video className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                    <p className="text-muted-foreground font-medium">No upcoming sessions right now.</p>
-                    <p className="text-sm text-muted-foreground/70">Check back later or ask your admin to schedule one.</p>
+                  <div className="text-center py-20 bg-white/[0.02] border border-white/5 rounded-[3rem] border-dashed">
+                    <Video className="w-16 h-16 text-muted-foreground/20 mx-auto mb-6" />
+                    <p className="text-xl font-bold text-white opacity-40">No live sessions currently</p>
+                    <p className="text-muted-foreground mt-2 max-w-xs mx-auto opacity-60">Check the schedule or wait for an invitation from your cohort leader.</p>
                   </div>
                 ) : (
                   sessions.map((session) => (
-                    <motion.div 
-                      key={session.id}
-                      whileHover={{ scale: 1.01 }}
-                      className="group"
-                    >
-                      <Card className="bg-white/[0.02] border-white/5 hover:bg-white/[0.04] transition-all duration-300 rounded-[2rem] overflow-hidden">
-                        <CardContent className="p-0">
-                          <div className="flex items-center p-6 gap-6">
-                            <div className="w-24 h-24 rounded-2xl bg-primary/20 flex items-center justify-center border border-primary/20 overflow-hidden relative group-hover:border-primary/40 transition-colors">
-                              <Video className="w-8 h-8 text-primary opacity-60" />
-                              <div className="absolute inset-0 bg-primary/10 group-hover:bg-primary/20 transition-colors" />
-                            </div>
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 rounded-full px-3">
-                                  {session.cohort}
+                    <motion.div key={session.id} whileHover={{ y: -4 }}>
+                      <Card className="hover:bg-white/[0.05] border-white/5 hover:border-primary/20 transition-all duration-500">
+                        <div className="p-8 flex items-center gap-8">
+                          <div className="w-28 h-28 rounded-[2rem] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20 relative group overflow-hidden">
+                            <Video className="w-10 h-10 text-primary relative z-10" />
+                            <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-center gap-3">
+                              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                                {session.cohort}
+                              </Badge>
+                              {session.status === "live" && (
+                                <Badge className="bg-green-500 text-white border-none px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                                  Live Now
                                 </Badge>
-                                {(session.status === "upcoming" || session.status === "live") && (
-                                  <Badge className="bg-green-500/10 text-green-400 border-green-500/20 rounded-full px-3 animate-pulse">
-                                    {session.status === "live" ? "Live Now" : "Live Soon"}
-                                  </Badge>
-                                )}
-                              </div>
-                              <h3 className="text-xl font-bold text-white mb-1 group-hover:text-primary transition-colors">{session.title}</h3>
-                              <p className="text-muted-foreground">Led by {session.instructor}</p>
+                              )}
                             </div>
-
-                            <div className="text-right space-y-3">
-                              <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
-                                <Clock className="w-4 h-4" />
+                            <h3 className="text-2xl font-bold text-white tracking-tight leading-tight">{session.title}</h3>
+                            <div className="flex items-center gap-6 text-muted-foreground font-medium opacity-70">
+                              <span className="flex items-center gap-2">
+                                <Users className="w-4 h-4 text-primary" />
+                                {session.instructor}
+                              </span>
+                              <span className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-primary" />
                                 {session.time}
-                              </div>
-                              <Link href={`/room/${session.id}`}>
-                                <Button className="rounded-xl bg-white/5 hover:bg-primary hover:text-white border-white/10 group-hover:border-primary/50 transition-all">
-                                  Join Room
-                                  <ArrowRight className="ml-2 w-4 h-4" />
-                                </Button>
-                              </Link>
+                              </span>
                             </div>
                           </div>
-                        </CardContent>
+
+                          <Link href={`/room/${session.id}`}>
+                            <Button className="rounded-2xl h-14 px-8 bg-white/5 hover:bg-primary text-white font-bold border border-white/10 hover:border-primary transition-all group">
+                              Join Room
+                              <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            </Button>
+                          </Link>
+                        </div>
                       </Card>
                     </motion.div>
                   ))
@@ -223,54 +216,52 @@ export default function DashboardPage() {
             </div>
 
             {/* Sidebar Content: Replay Vault */}
-            <div className="space-y-6">
-              <div className="flex items-center justify-between px-2">
-                <h2 className="text-2xl font-outfit font-bold text-white">Vault Replays</h2>
-                <Link href="/vault" className="text-sm text-primary hover:underline font-medium">Explore</Link>
+            <div className="space-y-10">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-heading font-bold text-white tracking-tight">Vault</h2>
+                <Link href="/vault" className="text-sm font-bold text-primary hover:underline">Explore</Link>
               </div>
 
-              <div className="space-y-4">
-                {recentReplays.length === 0 ? (
-                  <div className="text-center p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
-                    <p className="text-sm text-muted-foreground">No replays available yet.</p>
-                  </div>
-                ) : (
-                  recentReplays.map((replay) => (
-                    <Link href={`/vault/${replay.id}`} key={replay.id} className="block">
-                      <Card className="bg-white/[0.03] border-white/5 rounded-3xl overflow-hidden group hover:bg-white/[0.05] transition-all">
-                        <CardHeader className="p-0 aspect-video bg-zinc-900 relative flex items-center justify-center overflow-hidden">
-                          <img 
-                            src={replay.thumbnail || "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1000"} 
-                            alt={replay.title} 
-                            className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 transition-opacity group-hover:scale-105 duration-500"
-                          />
-                          <PlayCircle className="w-12 h-12 text-white/80 group-hover:text-primary transition-colors z-10 shadow-lg rounded-full" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                        </CardHeader>
-                        <CardContent className="p-5">
-                          <h4 className="font-bold text-white mb-1 truncate">{replay.title}</h4>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground uppercase tracking-widest">
-                            <span>{replay.date ? new Date(replay.date.toDate()).toLocaleDateString() : "Unknown"}</span>
-                            <span>{formatDuration(replay.durationSeconds)}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  ))
-                )}
+              <div className="space-y-6">
+                {recentReplays.map((replay) => (
+                  <Link href={`/vault/${replay.id}`} key={replay.id} className="block group">
+                    <Card className="overflow-hidden border-white/5 group-hover:border-primary/20 transition-all duration-500">
+                      <div className="aspect-[16/10] bg-zinc-900 relative flex items-center justify-center overflow-hidden">
+                        <img 
+                          src={replay.thumbnail || "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1000"} 
+                          alt={replay.title} 
+                          className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:opacity-60 group-hover:scale-110 transition-all duration-700"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
+                        <div className="w-16 h-16 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center relative z-10 group-hover:scale-110 group-hover:bg-primary/20 group-hover:border-primary/50 transition-all duration-500">
+                          <PlayCircle className="w-8 h-8 text-white group-hover:text-primary transition-colors" />
+                        </div>
+                      </div>
+                      <div className="p-6 space-y-2">
+                        <h4 className="font-bold text-white text-lg group-hover:text-primary transition-colors truncate">{replay.title}</h4>
+                        <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">
+                          <span>{replay.date ? new Date(replay.date.toDate()).toLocaleDateString() : "Leadership Session"}</span>
+                          <span>{formatDuration(replay.durationSeconds)}</span>
+                        </div>
+                      </div>
+                    </Card>
+                  </Link>
+                ))}
               </div>
 
-              <Card className="bg-primary/5 border border-primary/20 rounded-[2rem] p-6 overflow-hidden relative">
-                <div className="relative z-10">
-                  <h3 className="text-lg font-bold text-white mb-2">Leadership Program</h3>
-                  <p className="text-sm text-muted-foreground mb-4 leading-relaxed">
-                    Unlock exclusive content and personalized coaching with our Elite Leadership Program.
+              {/* Upgrade Card */}
+              <Card className="bg-primary/10 border-primary/20 p-8 space-y-6 relative overflow-hidden group">
+                <div className="relative z-10 space-y-4">
+                  <h3 className="text-2xl font-bold text-white tracking-tight">Elite Leadership</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed font-medium">
+                    Unlock exclusive cohort content and personalized coaching with our Premium Program.
                   </p>
-                  <Button size="sm" className="bg-primary text-white hover:bg-primary/90 rounded-full px-6">
-                    Learn More
+                  <Button variant="luxe" className="w-full h-12 rounded-xl font-bold">
+                    Upgrade Now
                   </Button>
                 </div>
-                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-primary/20 blur-[60px] rounded-full" />
+                <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-primary/20 blur-[80px] rounded-full group-hover:scale-150 transition-transform duration-700" />
+                <Sparkles className="absolute top-4 right-4 w-6 h-6 text-primary/40 animate-pulse" />
               </Card>
             </div>
           </div>
