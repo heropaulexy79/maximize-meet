@@ -9,7 +9,7 @@ import { Sparkles, ArrowRight, Mail, Lock, User } from "lucide-react";
 import Link from "next/link";
 import { auth, db } from "@/lib/firebase";
 import { createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -49,7 +49,24 @@ export default function SignupPage() {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+
+      // Check if user exists in Firestore
+      const userRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          uid: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          role: "student",
+          createdAt: new Date().toISOString(),
+        });
+      }
+
       toast.success("Welcome to the Nation!");
       router.push("/dashboard");
     } catch (error: any) {
