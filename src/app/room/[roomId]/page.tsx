@@ -725,10 +725,8 @@ function HandStatusManager({ isHandRaised }: { isHandRaised: boolean }) {
     };
 
     room.on(RoomEvent.ParticipantMetadataChanged, handleMetadataChange);
-    room.on(RoomEvent.LocalParticipantMetadataChanged, handleMetadataChange);
     return () => {
       room.off(RoomEvent.ParticipantMetadataChanged, handleMetadataChange);
-      room.off(RoomEvent.LocalParticipantMetadataChanged, handleMetadataChange);
     };
   }, [room]);
 
