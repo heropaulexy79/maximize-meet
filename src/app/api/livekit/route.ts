@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
     room: room, 
     canPublish: true, 
     canSubscribe: true,
+    canUpdateOwnMetadata: true,
     roomAdmin: isAdmin,
   });
 

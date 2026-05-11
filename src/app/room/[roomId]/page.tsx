@@ -424,14 +424,38 @@ function CustomControlDock({
             <Sparkles className="w-5 h-5" />
           </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowReactions(!showReactions)}
-            className={`w-12 h-12 rounded-full transition-all border ${showReactions ? "bg-primary/20 border-primary text-primary" : "bg-white/5 border-white/10 text-white"}`}
-          >
-            <Smile className="w-5 h-5" />
-          </Button>
+          <div className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowReactions(!showReactions)}
+              className={`w-12 h-12 rounded-full transition-all border ${showReactions ? "bg-primary border-primary text-white" : "bg-white/5 border-white/10 text-white"}`}
+            >
+              <Smile className="w-5 h-5" />
+            </Button>
+
+            <AnimatePresence>
+              {showReactions && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute bottom-16 left-1/2 -translate-x-1/2 bg-[#0a0a0a]/95 border border-white/10 backdrop-blur-xl rounded-2xl p-2 flex gap-2 shadow-2xl z-50"
+                >
+                  {REACTIONS.map((r) => (
+                    <button
+                      key={r.label}
+                      onClick={() => sendReaction(r.emoji)}
+                      className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-white/5 rounded-xl transition-colors"
+                      title={r.label}
+                    >
+                      {r.emoji}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           <TrackToggle 
             source={Track.Source.ScreenShare} 
@@ -683,7 +707,8 @@ function HandStatusManager({ isHandRaised }: { isHandRaised: boolean }) {
   useEffect(() => {
     if (!room) return;
 
-    const handleMetadataChange = (metadata: string | undefined, participant: any) => {
+    const handleMetadataChange = (participant: any) => {
+      const metadata = participant.metadata;
       if (!metadata) return;
       try {
         const data = JSON.parse(metadata);
@@ -695,13 +720,15 @@ function HandStatusManager({ isHandRaised }: { isHandRaised: boolean }) {
           });
         }
       } catch (e) {
-        console.error("Error parsing participant metadata:", e);
+        // Metadata might not be JSON, ignore
       }
     };
 
     room.on(RoomEvent.ParticipantMetadataChanged, handleMetadataChange);
+    room.on(RoomEvent.LocalParticipantMetadataChanged, handleMetadataChange);
     return () => {
       room.off(RoomEvent.ParticipantMetadataChanged, handleMetadataChange);
+      room.off(RoomEvent.LocalParticipantMetadataChanged, handleMetadataChange);
     };
   }, [room]);
 
