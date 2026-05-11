@@ -71,17 +71,38 @@ export async function POST(req: NextRequest) {
     else if (event.event === "egress_ended") {
       const egressInfo = event.egressInfo;
       if (egressInfo) {
-        // Status 3 is EGRESS_COMPLETE
-        // Check if there's a file URL
         let fileUrl = "";
-        
-        // Use fileResults which is strictly typed in modern LiveKit SDKs
         if (egressInfo.fileResults && egressInfo.fileResults.length > 0) {
           fileUrl = egressInfo.fileResults[0].location;
         } else if ((egressInfo as any).file && (egressInfo as any).file.location) {
-          // Fallback for older payloads, cast to any to bypass strict TS check
           fileUrl = (egressInfo as any).file.location;
         }
+
+        // 1. Resolve Dynamic Title from Sessions collection
+        let title = `Session Recording: ${egressInfo.roomName}`;
+        let instructor = "Academy Instructor";
+        let category = "Live Session";
+
+        try {
+          const sessionsSnapshot = await adminDb.collection("sessions")
+            .where("roomId", "==", egressInfo.roomName)
+            .limit(1)
+            .get();
+          
+          if (!sessionsSnapshot.empty) {
+            const sessionData = sessionsSnapshot.docs[0].data();
+            title = sessionData.title || title;
+            instructor = sessionData.instructor || instructor;
+            category = sessionData.cohort || category;
+          }
+        } catch (error) {
+          console.error("[Vault] Error resolving session title:", error);
+        }
+
+        // 2. Generate Dynamic Thumbnail based on Title
+        // Using a premium placeholder service with leadership styling
+        const encodedTitle = encodeURIComponent(title);
+        const thumbnailUrl = `https://dynamic-og-image-generator.vercel.app/api/generate?title=${encodedTitle}&author=MAXIMIZE%20NATION&theme=dark&color=%231a2080`;
 
         const docRef = adminDb.collection("replays").doc(egressInfo.egressId);
         
@@ -89,7 +110,6 @@ export async function POST(req: NextRequest) {
         const startedAt = Number(egressInfo.startedAt);
         const endedAt = Number(egressInfo.endedAt);
         if (startedAt && endedAt) {
-          // LiveKit timestamps are often in nanoseconds
           if (startedAt > 1e16) {
             durationSeconds = Math.floor((endedAt - startedAt) / 1e9);
           } else {
@@ -100,18 +120,18 @@ export async function POST(req: NextRequest) {
         await docRef.set({
           id: egressInfo.egressId,
           roomId: egressInfo.roomName,
-          title: `Session Recording: ${egressInfo.roomName}`,
-          instructor: "Academy Instructor",
-          category: "Live Session",
+          title: title,
+          instructor: instructor,
+          category: category,
           date: admin.firestore.Timestamp.fromDate(eventTime),
           durationSeconds: durationSeconds,
           fileUrl: fileUrl,
-          thumbnail: "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1000",
+          thumbnail: thumbnailUrl,
           status: egressInfo.status,
           error: egressInfo.error || null
         }, { merge: true });
         
-        console.log(`[Vault] Recorded egress_ended for room ${egressInfo.roomName}`);
+        console.log(`[Vault] Recorded egress_ended for room ${egressInfo.roomName} with title: ${title}`);
       }
     }
 
