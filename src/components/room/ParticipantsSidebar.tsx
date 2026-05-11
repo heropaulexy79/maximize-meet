@@ -10,13 +10,7 @@ import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
-interface ParticipantsSidebarProps {
-  open: boolean;
-  onClose: () => void;
-  roomId: string;
-}
-
-export function ParticipantsSidebar({ open, onClose, roomId }: ParticipantsSidebarProps) {
+export function ParticipantsSidebar({ onClose, roomId }: { onClose: () => void; roomId: string }) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -63,97 +57,85 @@ export function ParticipantsSidebar({ open, onClose, roomId }: ParticipantsSideb
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ x: 400, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: 400, opacity: 0 }}
-          className="fixed right-0 top-0 bottom-0 md:top-0 md:bottom-0 md:right-0 w-full md:w-80 bg-black/80 backdrop-blur-3xl border-l border-white/10 z-[100] flex flex-col shadow-2xl"
-        >
-          <div className="p-6 border-b border-white/10 flex items-center justify-between">
-            <h2 className="text-xl font-outfit font-bold text-white flex items-center gap-2">
-              People <span className="bg-primary/20 text-primary text-xs px-2 py-0.5 rounded-full">{participants.length}</span>
-            </h2>
-            <Button variant="ghost" size="icon" onClick={onClose} className="text-muted-foreground hover:text-white rounded-full">
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
+    <div className="h-full flex flex-col">
+      <div className="p-8 border-b border-white/5 flex items-center justify-between">
+        <h2 className="text-xl font-heading font-bold text-white flex items-center gap-3">
+          People <span className="bg-primary/20 text-primary text-[10px] px-2.5 py-1 rounded-full uppercase tracking-widest">{participants.length}</span>
+        </h2>
+        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-white/5 text-white/40">
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
 
-          {isAdmin && (
-            <div className="p-4 border-b border-white/10">
-              <Button 
-                onClick={() => handleAdminAction("muteAll")}
-                className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10"
-              >
-                <VolumeX className="w-4 h-4 mr-2" />
-                Mute All Audio
-              </Button>
-            </div>
-          )}
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {participants.map((p) => {
-              const isLocal = p.identity === localParticipant.identity;
-              const isAudioMuted = !p.isMicrophoneEnabled;
-              const isVideoMuted = !p.isCameraEnabled;
-              const audioTrack = p.getTrackPublication(Track.Source.Microphone);
-              const metadata = p.metadata ? JSON.parse(p.metadata) : {};
-              const isHandRaised = metadata.handRaised;
-
-              return (
-                <div key={p.identity} className="flex items-center justify-between p-3 rounded-2xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] transition-colors">
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                      <span className="text-primary font-bold uppercase">{p.identity.charAt(0)}</span>
-                    </div>
-                    <div className="truncate">
-                      <div className="text-sm font-medium text-white truncate flex items-center gap-2">
-                        {p.identity} {isLocal && <span className="text-xs text-muted-foreground">(You)</span>}
-                        {isHandRaised && <Hand className="w-3.5 h-3.5 text-amber-500 fill-amber-500 animate-bounce" />}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    {/* Status Icons */}
-                    <div className="flex items-center gap-1 mr-2 text-muted-foreground">
-                      {isAudioMuted ? <MicOff className="w-4 h-4 text-red-400" /> : <Mic className="w-4 h-4 text-green-400" />}
-                      {isVideoMuted ? <VideoOff className="w-4 h-4 text-red-400" /> : <Video className="w-4 h-4 text-blue-400" />}
-                    </div>
-
-                    {/* Admin Actions */}
-                    {isAdmin && !isLocal && (
-                      <>
-                        {!isAudioMuted && audioTrack && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="w-8 h-8 rounded-full text-muted-foreground hover:text-white hover:bg-white/10"
-                            onClick={() => handleAdminAction("mute", p.identity, audioTrack.trackSid)}
-                            title="Mute Microphone"
-                          >
-                            <MicOff className="w-4 h-4" />
-                          </Button>
-                        )}
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="w-8 h-8 rounded-full text-red-400 hover:text-red-300 hover:bg-red-500/20"
-                          onClick={() => handleAdminAction("kick", p.identity)}
-                          title="Remove from room"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </motion.div>
+      {isAdmin && (
+        <div className="p-6 border-b border-white/5 bg-white/[0.02]">
+          <Button 
+            onClick={() => handleAdminAction("muteAll")}
+            className="w-full h-12 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-bold text-xs uppercase tracking-widest"
+          >
+            <VolumeX className="w-4 h-4 mr-2" />
+            Mute All Audio
+          </Button>
+        </div>
       )}
-    </AnimatePresence>
+
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {participants.map((p) => {
+          const isLocal = p.identity === localParticipant.identity;
+          const isAudioMuted = !p.isMicrophoneEnabled;
+          const isVideoMuted = !p.isCameraEnabled;
+          const audioTrack = p.getTrackPublication(Track.Source.Microphone);
+          const metadata = p.metadata ? JSON.parse(p.metadata) : {};
+          const isHandRaised = metadata.handRaised;
+
+          return (
+            <div key={p.identity} className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.05] transition-all group/p">
+              <div className="flex items-center gap-4 overflow-hidden">
+                <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/20">
+                  <span className="text-primary font-bold uppercase text-lg">{p.identity.charAt(0)}</span>
+                </div>
+                <div className="truncate">
+                  <div className="text-sm font-bold text-white truncate flex items-center gap-2">
+                    {p.identity} {isLocal && <span className="text-[10px] text-muted-foreground uppercase opacity-60"> (You)</span>}
+                    {isHandRaised && <Hand className="w-4 h-4 text-amber-500 fill-amber-500 animate-bounce" />}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">Participant</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 mr-3">
+                  {isAudioMuted ? <MicOff className="w-4 h-4 text-red-400/60" /> : <Mic className="w-4 h-4 text-green-400" />}
+                  {isVideoMuted ? <VideoOff className="w-4 h-4 text-red-400/60" /> : <Video className="w-4 h-4 text-blue-400" />}
+                </div>
+
+                {isAdmin && !isLocal && (
+                  <div className="flex items-center gap-1">
+                    {!isAudioMuted && audioTrack && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="w-9 h-9 rounded-xl text-muted-foreground hover:text-white hover:bg-white/10"
+                        onClick={() => handleAdminAction("mute", p.identity, audioTrack.trackSid)}
+                      >
+                        <MicOff className="w-4 h-4" />
+                      </Button>
+                    )}
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="w-9 h-9 rounded-xl text-red-400/60 hover:text-red-400 hover:bg-red-500/10"
+                      onClick={() => handleAdminAction("kick", p.identity)}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

@@ -25,10 +25,8 @@ type Question = {
 };
 
 export function InteractionsSidebar({
-  open,
   onClose,
 }: {
-  open: boolean;
   onClose: () => void;
 }) {
   const room = useRoomContext();
@@ -95,99 +93,92 @@ export function InteractionsSidebar({
   };
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ x: 400 }}
-          animate={{ x: 0 }}
-          exit={{ x: 400 }}
-          className="fixed top-0 right-0 h-[calc(100vh-80px)] md:h-[calc(100vh-96px)] w-full md:w-96 bg-[#050505] border-l border-white/5 z-[60] flex flex-col shadow-2xl"
-        >
-          <div className="p-6 border-b border-white/5 flex items-center justify-between">
-            <div className="flex bg-white/[0.03] p-1 rounded-xl">
-              <button
-                onClick={() => setActiveTab("qa")}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${activeTab === 'qa' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/50 hover:text-white'}`}
-              >
-                Q&A
-              </button>
-              <button
-                onClick={() => setActiveTab("polls")}
-                className={`px-4 py-2 rounded-lg text-xs font-medium transition-all ${activeTab === 'polls' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/50 hover:text-white'}`}
-              >
-                Polls
-              </button>
-            </div>
-            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-white/5">
-              <X className="w-5 h-5 text-white/50" />
-            </Button>
-          </div>
+    <div className="h-full flex flex-col">
+      <div className="p-8 border-b border-white/5 flex items-center justify-between">
+        <div className="flex bg-white/[0.04] p-1.5 rounded-2xl border border-white/5">
+          <button
+            onClick={() => setActiveTab("qa")}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-widest ${activeTab === 'qa' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/40 hover:text-white'}`}
+          >
+            Q&A
+          </button>
+          <button
+            onClick={() => setActiveTab("polls")}
+            className={`px-5 py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-widest ${activeTab === 'polls' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-white/40 hover:text-white'}`}
+          >
+            Polls
+          </button>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onClose} className="rounded-full hover:bg-white/5 text-white/40">
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
 
-          <ScrollArea className="flex-1 p-6">
-            {activeTab === "qa" ? (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <h4 className="text-sm font-bold text-white">Ask a Question</h4>
-                  <div className="relative">
-                    <Input
-                      placeholder="Type your question..."
-                      value={newQuestion}
-                      onChange={(e) => setNewQuestion(e.target.value)}
-                      className="bg-white/[0.05] border-white/10 pr-12 h-12 rounded-xl"
-                    />
-                    <Button onClick={askQuestion} size="icon" className="absolute right-1 top-1 w-10 h-10 rounded-lg">
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {questions.map((q) => (
-                    <motion.div key={q.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl space-y-2">
-                      <div className="flex justify-between items-start">
-                        <span className="text-[10px] text-primary font-bold uppercase tracking-wider">{q.user}</span>
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[10px]">{q.upvotes} upvotes</Badge>
-                      </div>
-                      <p className="text-sm text-white/80">{q.text}</p>
-                    </motion.div>
-                  ))}
+      <ScrollArea className="flex-1">
+        <div className="p-8 space-y-8">
+          {activeTab === "qa" ? (
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-white uppercase tracking-widest opacity-80">Ask a Question</h4>
+                <div className="relative">
+                  <Input
+                    placeholder="Type your question..."
+                    value={newQuestion}
+                    onChange={(e) => setNewQuestion(e.target.value)}
+                    className="bg-white/[0.05] border-white/10 pr-14 h-14 rounded-2xl text-sm"
+                  />
+                  <Button onClick={askQuestion} size="icon" className="absolute right-2 top-2 w-10 h-10 rounded-xl shadow-lg shadow-primary/20">
+                    <Send className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="space-y-2">
-                  <h4 className="text-sm font-bold text-white">Create a Poll</h4>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Poll question..."
-                      value={newPollQuestion}
-                      onChange={(e) => setNewPollQuestion(e.target.value)}
-                      className="bg-white/[0.05] border-white/10 h-12 rounded-xl"
-                    />
-                    <Button onClick={createPoll} size="icon" className="w-12 h-12 rounded-xl"><Plus /></Button>
-                  </div>
-                </div>
 
-                <div className="space-y-4">
-                  {polls.map((p) => (
-                    <div key={p.id} className="p-4 bg-white/[0.03] border border-white/5 rounded-2xl space-y-4">
-                      <h5 className="text-sm font-bold text-white">{p.question}</h5>
-                      <div className="space-y-2">
-                        {p.options.map((opt, i) => (
-                          <button key={i} className="w-full p-3 rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/5 flex justify-between items-center transition-all group">
-                            <span className="text-xs text-white/70 group-hover:text-white">{opt.text}</span>
-                            <span className="text-[10px] text-muted-foreground">{opt.votes} votes</span>
-                          </button>
-                        ))}
-                      </div>
+              <div className="space-y-4">
+                {questions.map((q) => (
+                  <motion.div key={q.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 bg-white/[0.03] border border-white/5 rounded-[2rem] space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[10px] text-primary font-bold uppercase tracking-[0.2em]">{q.user}</span>
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-[9px] px-2 py-0.5 rounded-full font-bold">{q.upvotes} UPVOTES</Badge>
                     </div>
-                  ))}
+                    <p className="text-sm text-white/80 leading-relaxed font-medium">{q.text}</p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-white uppercase tracking-widest opacity-80">Create a Poll</h4>
+                <div className="flex gap-3">
+                  <Input
+                    placeholder="Poll question..."
+                    value={newPollQuestion}
+                    onChange={(e) => setNewPollQuestion(e.target.value)}
+                    className="bg-white/[0.05] border-white/10 h-14 rounded-2xl text-sm"
+                  />
+                  <Button onClick={createPoll} size="icon" className="w-14 h-14 rounded-2xl shrink-0 shadow-lg shadow-primary/20"><Plus className="w-6 h-6" /></Button>
                 </div>
               </div>
-            )}
-          </ScrollArea>
-        </motion.div>
-      )}
-    </AnimatePresence>
+
+              <div className="space-y-5">
+                {polls.map((p) => (
+                  <div key={p.id} className="p-6 bg-white/[0.03] border border-white/5 rounded-[2rem] space-y-5">
+                    <h5 className="text-sm font-bold text-white leading-relaxed">{p.question}</h5>
+                    <div className="space-y-3">
+                      {p.options.map((opt, i) => (
+                        <button key={i} className="w-full p-4 rounded-2xl bg-white/[0.05] hover:bg-white/10 border border-white/5 flex justify-between items-center transition-all group active:scale-[0.98]">
+                          <span className="text-xs font-bold text-white/70 group-hover:text-white uppercase tracking-widest">{opt.text}</span>
+                          <span className="text-[10px] font-mono text-muted-foreground">{opt.votes} VOTES</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </ScrollArea>
+    </div>
   );
 }

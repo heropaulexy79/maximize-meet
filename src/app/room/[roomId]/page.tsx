@@ -77,6 +77,7 @@ import { InteractionsSidebar } from "@/components/room/InteractionsSidebar";
 import { MeetingGrid } from "@/components/room/MeetingGrid";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 // ─── Session Timer ─────────────────────────────────────────────────────────────
 function SessionTimer() {
@@ -354,7 +355,7 @@ function CustomControlDock({
       <div className="flex items-center gap-3">
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <TrackToggle 
                 source={Track.Source.Microphone} 
                 showIcon={false}
@@ -372,7 +373,7 @@ function CustomControlDock({
           </Tooltip>
 
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <TrackToggle 
                 source={Track.Source.Camera} 
                 showIcon={false}
@@ -390,7 +391,7 @@ function CustomControlDock({
           </Tooltip>
 
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <Button
                 variant="ghost"
                 onClick={toggleHand}
@@ -446,7 +447,7 @@ function CustomControlDock({
           {/* Screen Share */}
           <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger asChild>
+              <TooltipTrigger>
                 <TrackToggle 
                   source={Track.Source.ScreenShare} 
                   showIcon={false}
@@ -466,7 +467,7 @@ function CustomControlDock({
           {isAdmin && (
             <TooltipProvider>
               <Tooltip>
-                <TooltipTrigger asChild>
+                <TooltipTrigger>
                   <Button
                     variant="ghost"
                     onClick={isRecording ? onStopRecording : onStartRecording}
@@ -496,7 +497,7 @@ function CustomControlDock({
               { icon: HelpCircle, open: interactionsOpen, setOpen: setInteractionsOpen, label: "Activities", count: 0 },
             ].map((item, i) => (
               <Tooltip key={i}>
-                <TooltipTrigger asChild>
+                <TooltipTrigger>
                   <Button
                     variant="ghost"
                     onClick={() => item.setOpen(!item.open)}
@@ -524,7 +525,7 @@ function CustomControlDock({
         {/* Leave Button */}
         <TooltipProvider>
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <Button
                 variant="destructive"
                 onClick={() => router.push("/dashboard")}
@@ -948,29 +949,6 @@ export default function RoomPage() {
   }
 
   return (
-    <LiveKitRoom
-      video={true}
-      audio={true}
-      token={token}
-      serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
-      data-lk-theme="default"
-      onDisconnected={() => router.push("/dashboard")}
-      className="h-screen bg-[#050505]"
-    >
-      <div className="relative h-screen flex flex-col">
-        {/* ── Header ── */}
-        <div className="absolute top-0 left-0 right-0 z-50 p-6 flex items-center justify-between pointer-events-none">
-          {/* Room Info */}
-          <div className="flex items-center gap-4 pointer-events-auto">
-            <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex items-center gap-4 shadow-2xl">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <Circle className="w-4 h-4 fill-primary-foreground text-primary-foreground animate-pulse" />
-              </div>
-              <div>
-                <h3 className="text-white font-bold text-sm leading-none mb-1 uppercase tracking-widest">
-                  Live Session
-                </h3>
-                <p className="text-muted-foreground text-xs font-mono">{roomId}</p>
     <div className="relative h-screen w-full bg-luxe-gradient overflow-hidden flex flex-col font-sans">
       <LiveKitRoom
         serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
@@ -978,6 +956,7 @@ export default function RoomPage() {
         connect={true}
         video={true}
         audio={true}
+        onDisconnected={() => router.push("/dashboard")}
         className="flex-1 flex flex-col relative"
       >
         <RoomAudioRenderer />
@@ -1003,16 +982,6 @@ export default function RoomPage() {
           </div>
           
           <div className="flex items-center gap-4 pointer-events-auto">
-            <div className="flex -space-x-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="w-10 h-10 rounded-full border-2 border-background bg-zinc-800 flex items-center justify-center overflow-hidden">
-                  <User className="w-5 h-5 text-white/40" />
-                </div>
-              ))}
-              <div className="w-10 h-10 rounded-full border-2 border-background bg-primary/20 backdrop-blur-md flex items-center justify-center text-[10px] font-bold text-primary">
-                +12
-              </div>
-            </div>
             <Badge variant="outline" className="bg-white/5 border-white/10 text-white/80 px-5 py-2 rounded-full backdrop-blur-md font-bold tracking-wide">
               Cohort Alpha
             </Badge>
@@ -1024,7 +993,6 @@ export default function RoomPage() {
           <div className="flex-1 relative rounded-[3.5rem] overflow-hidden border border-white/10 bg-black/40 backdrop-blur-md shadow-2xl group/grid">
             <MeetingGrid 
               layout={layout} 
-              isHandRaised={isHandRaised}
             />
             
             {/* Reaction Layer */}
@@ -1042,7 +1010,7 @@ export default function RoomPage() {
                   <div className="glass rounded-2xl p-6 shadow-2xl border-primary/20">
                     <p className="text-primary font-bold text-[10px] uppercase tracking-widest mb-2">Live Transcript</p>
                     <p className="text-white/90 text-base leading-relaxed font-medium">
-                      "Welcome everyone to today's leadership session. We are focusing on transformational coaching strategies..."
+                      "Listening to the speaker..."
                     </p>
                   </div>
                 </motion.div>
@@ -1059,7 +1027,7 @@ export default function RoomPage() {
                 exit={{ x: 400, opacity: 0 }}
                 className="w-[400px] ml-8 h-full glass rounded-[3.5rem] overflow-hidden shadow-2xl border-white/10 relative"
               >
-                {participantsSidebarOpen && <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} />}
+                {participantsSidebarOpen && <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} roomId={roomId as string} />}
                 {chatOpen && <ChatSidebar onClose={() => setChatOpen(false)} onUnreadChange={setUnreadChat} />}
                 {interactionsOpen && <InteractionsSidebar onClose={() => setInteractionsOpen(false)} />}
               </motion.div>
@@ -1070,15 +1038,15 @@ export default function RoomPage() {
         {/* Floating Controls Dock */}
         <CustomControlDock
           isRecording={isRecording}
-          onStartRecording={handleStartRecording}
-          onStopRecording={handleStopRecording}
+          onStartRecording={startRecording}
+          onStopRecording={stopRecording}
           setInviteOpen={setInviteOpen}
           setParticipantsSidebarOpen={setParticipantsSidebarOpen}
           participantsSidebarOpen={participantsSidebarOpen}
           chatOpen={chatOpen}
           setChatOpen={setChatOpen}
           isHandRaised={isHandRaised}
-          toggleHand={() => setIsHandRaised(!isHandRaised)}
+          toggleHand={toggleHand}
           layout={layout}
           setLayout={setLayout}
           showCaptions={showCaptions}
@@ -1096,11 +1064,6 @@ export default function RoomPage() {
           onClose={() => setInviteOpen(false)}
           roomId={roomId as string}
         />
-
-        <ReactionOverlay />
-        <BlurManager isBlurred={isBlurred} />
-        <HandStatusManager isHandRaised={isHandRaised} />
-        <ParticipantEventNotifier />
       </LiveKitRoom>
     </div>
   );

@@ -18,8 +18,14 @@ import {
   Clock, 
   ArrowRight, 
   Plus,
-  PlayCircle
+  PlayCircle,
+  Sparkles,
+  Trophy,
+  History,
+  LogOut,
+  Calendar
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
