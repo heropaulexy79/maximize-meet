@@ -52,11 +52,9 @@ export default function VaultPage() {
   const sanitizeUrl = (url: string) => {
     if (!url) return "";
     
-    // 1. Fix protocol malformations
-    let sanitized = url.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
-                       .replace(/^https\/\//, "https://")
-                       .replace(/^http\/\//, "http://")
-                       .replace(/^https:\/\/https:\/\//, "https://");
+    // 1. Force fix malformed protocol
+    let sanitized = url.replace(/.*https\/\//, "https://")
+                       .replace(/.*http\/\//, "http://");
     
     // 2. Swap to Public Domain
     sanitized = sanitized.replace(

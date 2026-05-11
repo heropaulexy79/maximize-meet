@@ -107,11 +107,9 @@ export async function POST(req: NextRequest) {
         if (fileUrl) {
           console.log("[Vault] Original fileUrl:", fileUrl);
           
-          // Fix protocol and swap to Public Domain
-          fileUrl = fileUrl.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
-                           .replace(/^https\/\//, "https://")
-                           .replace(/^http\/\//, "http://")
-                           .replace(/^https:\/\/https:\/\//, "https://")
+          // Force fix protocol and swap to Public Domain
+          fileUrl = fileUrl.replace(/.*https\/\//, "https://")
+                           .replace(/.*http\/\//, "http://")
                            .replace(
                              /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
                              "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"

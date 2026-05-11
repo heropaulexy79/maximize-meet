@@ -58,20 +58,17 @@ export default function ReplayPlayerPage() {
   const sanitizeUrl = (url: string) => {
     if (!url) return "";
     
-    // 1. Fix protocol malformations (e.g. "bucket.https//")
-    let sanitized = url.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
-                       .replace(/^https\/\//, "https://")
-                       .replace(/^http\/\//, "http://")
-                       .replace(/^https:\/\/https:\/\//, "https://");
+    // 1. Force fix malformed protocol (strips "bucket.https//" or similar)
+    let sanitized = url.replace(/.*https\/\//, "https://")
+                       .replace(/.*http\/\//, "http://");
     
     // 2. Swap Internal S3 Endpoint with Public R2.dev Domain
-    // This allows the browser to actually stream the video file
     sanitized = sanitized.replace(
       /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
       "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
     );
 
-    // 3. Ensure it starts with a protocol
+    // 3. Absolute fallback check
     if (!sanitized.startsWith("http")) {
       sanitized = "https://" + sanitized.replace(/^[a-zA-Z0-9-]+\./, "");
     }
