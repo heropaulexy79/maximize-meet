@@ -52,9 +52,14 @@ export default function VaultPage() {
   const sanitizeUrl = (url: string) => {
     if (!url) return "";
     
-    // 1. Force fix malformed protocol
-    let sanitized = url.replace(/.*https\/\//, "https://")
-                       .replace(/.*http\/\//, "http://");
+    let sanitized = url;
+    
+    // 1. Brute-force fix
+    if (sanitized.includes("https//")) {
+      sanitized = "https://" + sanitized.split("https//")[1];
+    } else if (sanitized.includes("http//")) {
+      sanitized = "http://" + sanitized.split("http//")[1];
+    }
     
     // 2. Swap to Public Domain
     sanitized = sanitized.replace(
@@ -62,9 +67,9 @@ export default function VaultPage() {
       "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
     );
 
-    if (!sanitized.startsWith("http")) {
-      sanitized = "https://" + sanitized.replace(/^[a-zA-Z0-9-]+\./, "");
-    }
+    // 3. Cleanup
+    sanitized = sanitized.replace(/^https:\/\/https:\/\//, "https://");
+    if (!sanitized.startsWith("http")) sanitized = "https://" + sanitized;
     
     return sanitized;
   };

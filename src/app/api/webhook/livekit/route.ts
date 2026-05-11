@@ -107,17 +107,26 @@ export async function POST(req: NextRequest) {
         if (fileUrl) {
           console.log("[Vault] Original fileUrl:", fileUrl);
           
-          // Force fix protocol and swap to Public Domain
-          fileUrl = fileUrl.replace(/.*https\/\//, "https://")
-                           .replace(/.*http\/\//, "http://")
-                           .replace(
-                             /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
-                             "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
-                           );
+          let sanitized = fileUrl;
           
-          if (!fileUrl.startsWith("http")) {
-            fileUrl = "https://" + fileUrl.replace(/^[a-zA-Z0-9-]+\./, "");
+          // Brute-force protocol fix
+          if (sanitized.includes("https//")) {
+            sanitized = "https://" + sanitized.split("https//")[1];
+          } else if (sanitized.includes("http//")) {
+            sanitized = "http://" + sanitized.split("http//")[1];
           }
+          
+          // Swap to Public Domain
+          sanitized = sanitized.replace(
+            /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
+            "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
+          );
+          
+          // Cleanup
+          sanitized = sanitized.replace(/^https:\/\/https:\/\//, "https://");
+          if (!sanitized.startsWith("http")) sanitized = "https://" + sanitized;
+          
+          fileUrl = sanitized;
           console.log("[Vault] Sanitized fileUrl:", fileUrl);
         }
 
