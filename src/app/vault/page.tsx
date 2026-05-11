@@ -51,8 +51,24 @@ export default function VaultPage() {
 
   const sanitizeUrl = (url: string) => {
     if (!url) return "";
-    return url.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
-              .replace(/^https\/\//, "https://");
+    
+    // 1. Fix protocol malformations
+    let sanitized = url.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
+                       .replace(/^https\/\//, "https://")
+                       .replace(/^http\/\//, "http://")
+                       .replace(/^https:\/\/https:\/\//, "https://");
+    
+    // 2. Swap to Public Domain
+    sanitized = sanitized.replace(
+      /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
+      "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
+    );
+
+    if (!sanitized.startsWith("http")) {
+      sanitized = "https://" + sanitized.replace(/^[a-zA-Z0-9-]+\./, "");
+    }
+    
+    return sanitized;
   };
 
   const formatDuration = (seconds: number) => {
@@ -176,7 +192,7 @@ export default function VaultPage() {
                           </Button>
                         </Link>
                         {replay.fileUrl && (
-                          <Button variant="outline" size="icon" onClick={() => window.open(replay.fileUrl, '_blank')} className="h-12 w-12 rounded-xl border-white/10 bg-white/5 text-white shrink-0">
+                          <Button variant="outline" size="icon" onClick={() => window.open(sanitizeUrl(replay.fileUrl), '_blank')} className="h-12 w-12 rounded-xl border-white/10 bg-white/5 text-white shrink-0">
                             <Download className="w-5 h-5" />
                           </Button>
                         )}

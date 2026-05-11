@@ -57,8 +57,26 @@ export default function ReplayPlayerPage() {
 
   const sanitizeUrl = (url: string) => {
     if (!url) return "";
-    return url.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
-              .replace(/^https\/\//, "https://");
+    
+    // 1. Fix protocol malformations (e.g. "bucket.https//")
+    let sanitized = url.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
+                       .replace(/^https\/\//, "https://")
+                       .replace(/^http\/\//, "http://")
+                       .replace(/^https:\/\/https:\/\//, "https://");
+    
+    // 2. Swap Internal S3 Endpoint with Public R2.dev Domain
+    // This allows the browser to actually stream the video file
+    sanitized = sanitized.replace(
+      /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
+      "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
+    );
+
+    // 3. Ensure it starts with a protocol
+    if (!sanitized.startsWith("http")) {
+      sanitized = "https://" + sanitized.replace(/^[a-zA-Z0-9-]+\./, "");
+    }
+    
+    return sanitized;
   };
 
   if (loading) {
@@ -150,6 +168,7 @@ export default function ReplayPlayerPage() {
             {replay.status === 3 && replay.fileUrl ? (
               <video 
                 controls 
+                crossOrigin="anonymous"
                 className="w-full h-full object-contain bg-black"
                 poster={replay.thumbnail}
                 src={videoUrl}

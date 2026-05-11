@@ -105,9 +105,22 @@ export async function POST(req: NextRequest) {
 
         // 3. Sanitize fileUrl (fix malformed R2/S3 URLs)
         if (fileUrl) {
-          // Fix cases like "bucket.https//..." or "https//..."
-          fileUrl = fileUrl.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://");
-          fileUrl = fileUrl.replace(/^https\/\//, "https://");
+          console.log("[Vault] Original fileUrl:", fileUrl);
+          
+          // Fix protocol and swap to Public Domain
+          fileUrl = fileUrl.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
+                           .replace(/^https\/\//, "https://")
+                           .replace(/^http\/\//, "http://")
+                           .replace(/^https:\/\/https:\/\//, "https://")
+                           .replace(
+                             /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
+                             "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
+                           );
+          
+          if (!fileUrl.startsWith("http")) {
+            fileUrl = "https://" + fileUrl.replace(/^[a-zA-Z0-9-]+\./, "");
+          }
+          console.log("[Vault] Sanitized fileUrl:", fileUrl);
         }
 
         const docRef = adminDb.collection("replays").doc(egressInfo.egressId);
