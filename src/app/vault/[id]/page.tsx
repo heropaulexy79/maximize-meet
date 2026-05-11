@@ -55,6 +55,12 @@ export default function ReplayPlayerPage() {
     return `${m}m`;
   };
 
+  const sanitizeUrl = (url: string) => {
+    if (!url) return "";
+    return url.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
+              .replace(/^https\/\//, "https://");
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen bg-black items-center justify-center">
@@ -83,6 +89,8 @@ export default function ReplayPlayerPage() {
       </div>
     );
   }
+
+  const videoUrl = sanitizeUrl(replay.fileUrl);
 
   return (
     <div className="flex min-h-screen bg-black">
@@ -123,7 +131,7 @@ export default function ReplayPlayerPage() {
             <div className="flex gap-3 shrink-0">
               {replay.fileUrl && (
                 <Button 
-                  onClick={() => window.open(replay.fileUrl, '_blank')}
+                  onClick={() => window.open(videoUrl, '_blank')}
                   className="rounded-xl bg-white/5 hover:bg-white/10 text-white border border-white/10"
                 >
                   <Download className="w-4 h-4 mr-2" />
@@ -144,7 +152,7 @@ export default function ReplayPlayerPage() {
                 controls 
                 className="w-full h-full object-contain bg-black"
                 poster={replay.thumbnail}
-                src={replay.fileUrl}
+                src={videoUrl}
               >
                 Your browser does not support the video tag.
               </video>

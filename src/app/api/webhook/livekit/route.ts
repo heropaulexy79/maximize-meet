@@ -100,9 +100,15 @@ export async function POST(req: NextRequest) {
         }
 
         // 2. Generate Dynamic Thumbnail based on Title
-        // Using a premium placeholder service with leadership styling
         const encodedTitle = encodeURIComponent(title);
         const thumbnailUrl = `https://dynamic-og-image-generator.vercel.app/api/generate?title=${encodedTitle}&author=MAXIMIZE%20NATION&theme=dark&color=%231a2080`;
+
+        // 3. Sanitize fileUrl (fix malformed R2/S3 URLs)
+        if (fileUrl) {
+          // Fix cases like "bucket.https//..." or "https//..."
+          fileUrl = fileUrl.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://");
+          fileUrl = fileUrl.replace(/^https\/\//, "https://");
+        }
 
         const docRef = adminDb.collection("replays").doc(egressInfo.egressId);
         

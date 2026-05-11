@@ -49,6 +49,12 @@ export default function VaultPage() {
     fetchReplays();
   }, []);
 
+  const sanitizeUrl = (url: string) => {
+    if (!url) return "";
+    return url.replace(/^[a-zA-Z0-9-]+\.https\/\//, "https://")
+              .replace(/^https\/\//, "https://");
+  };
+
   const formatDuration = (seconds: number) => {
     if (!seconds) return "0m";
     const h = Math.floor(seconds / 3600);
