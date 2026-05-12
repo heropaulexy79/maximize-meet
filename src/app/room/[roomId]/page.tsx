@@ -136,17 +136,17 @@ function CustomControlDock({
   };
 
   return (
-    <div className="flex items-center justify-between w-full px-4 md:px-6 py-4 bg-zinc-950/90 backdrop-blur-3xl border-t border-white/5">
-      {/* Session Info - Compact on Mobile */}
-      <div className="flex items-center gap-3 md:gap-6">
+    <div className="w-full px-4 md:px-6 py-4 bg-zinc-950/90 backdrop-blur-3xl border-t border-white/5 relative flex items-center justify-between">
+      {/* Session Info - Left Wing */}
+      <div className="flex-1 flex items-center gap-3 md:gap-6">
         <div className="flex flex-col">
           <span className="hidden md:block text-[10px] font-bold uppercase tracking-widest text-primary mb-1 text-glow">Live Academy Session</span>
           <SessionTimer />
         </div>
       </div>
 
-      {/* Main Controls */}
-      <div className="flex items-center gap-1 md:gap-3 bg-white/5 p-1 md:p-1.5 rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl">
+      {/* Main Controls - Dead Center */}
+      <div className="flex items-center gap-1 md:gap-3 bg-white/5 p-1 md:p-1.5 rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl relative z-10">
         <TooltipProvider>
           <TrackToggle source={Track.Source.Microphone} showIcon={false} className={cn(
             "flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
@@ -162,7 +162,7 @@ function CustomControlDock({
             {isCameraEnabled ? <Video className="w-4 h-4 md:w-5 md:h-5" /> : <VideoOff className="w-4 h-4 md:w-5 md:h-5" />}
           </TrackToggle>
 
-          {/* Reactions - Always Visible */}
+          {/* Reactions */}
           <DropdownMenu>
             <DropdownMenuTrigger>
               <Button variant="ghost" className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-transparent border-transparent text-white hover:bg-white/5">
@@ -185,6 +185,10 @@ function CustomControlDock({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="glass border-white/10 p-2 mb-4 min-w-[200px] space-y-1">
+                <DropdownMenuItem onClick={() => setInviteOpen(true)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer">
+                  <UserPlus className="w-4 h-4 text-primary" />
+                  <span className="font-medium">Invite Others</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setChatOpen(true)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer">
                   <MessageSquare className="w-4 h-4 text-primary" />
                   <span className="font-medium">Open Chat</span>
@@ -205,20 +209,24 @@ function CustomControlDock({
           <Separator orientation="vertical" className="h-6 md:h-8 bg-white/10 mx-0.5 md:mx-1" />
 
           {/* Desktop Only Extra Controls */}
-          <div className="hidden md:flex items-center gap-1.5 md:gap-3">
+          <div className="hidden md:flex items-center gap-1 md:gap-3">
+            <Button variant="ghost" onClick={() => setInviteOpen(true)} className="w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-transparent border-transparent text-white hover:bg-white/5">
+              <UserPlus className="w-5 h-5" />
+            </Button>
+
             <TrackToggle source={Track.Source.ScreenShare} showIcon={false} className={cn(
-              "items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+              "items-center justify-center w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
               isScreenShareEnabled ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
             )}>
-              <MonitorUp className="w-4 h-4 md:w-5 md:h-5" />
+              <MonitorUp className="w-5 h-5" />
             </TrackToggle>
 
             {isAdmin && (
               <Button variant="ghost" onClick={isRecording ? onStopRecording : onStartRecording} className={cn(
-                "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+                "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
                 isRecording ? "bg-red-500/20 border-red-500 text-red-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
               )}>
-                {isRecording ? <CircleStop className="w-4 h-4 md:w-5 md:h-5" /> : <CircleDot className="w-4 h-4 md:w-5 md:h-5" />}
+                {isRecording ? <CircleStop className="w-5 h-5" /> : <CircleDot className="w-5 h-5" />}
               </Button>
             )}
           </div>
@@ -229,28 +237,28 @@ function CustomControlDock({
         </TooltipProvider>
       </div>
 
-      {/* Sidebars Controls - Desktop Only */}
-      <div className="hidden md:flex items-center gap-1.5 md:gap-2">
+      {/* Sidebars Controls - Right Wing (Desktop Only) */}
+      <div className="flex-1 hidden md:flex items-center justify-end gap-1.5 md:gap-2">
         <Button variant="ghost" onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)} className={cn(
-          "w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+          "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           participantsSidebarOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
         )}>
-          <Users className="w-4 h-4 md:w-5 md:h-5" />
+          <Users className="w-5 h-5" />
         </Button>
 
         <Button variant="ghost" onClick={() => setChatOpen(!chatOpen)} className={cn(
-          "relative w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+          "relative w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           chatOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
         )}>
-          <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
+          <MessageSquare className="w-5 h-5" />
           {unreadChat > 0 && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]" />}
         </Button>
 
         <Button variant="ghost" onClick={() => setInteractionsOpen(!interactionsOpen)} className={cn(
-          "w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+          "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           interactionsOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
         )}>
-          <HelpCircle className="w-4 h-4 md:w-5 md:h-5" />
+          <HelpCircle className="w-5 h-5" />
         </Button>
       </div>
     </div>
