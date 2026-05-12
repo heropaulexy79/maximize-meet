@@ -210,6 +210,13 @@ function CustomControlDock({
 
           {/* Desktop Only Extra Controls */}
           <div className="hidden md:flex items-center gap-1 md:gap-3">
+            <Button variant="ghost" onClick={toggleHand} className={cn(
+              "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+              isHandRaised ? "bg-amber-500/20 border-amber-500/50 text-amber-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
+            )}>
+              <Hand className="w-5 h-5" />
+            </Button>
+
             <Button variant="ghost" onClick={() => setInviteOpen(true)} className="w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-transparent border-transparent text-white hover:bg-white/5">
               <UserPlus className="w-5 h-5" />
             </Button>
