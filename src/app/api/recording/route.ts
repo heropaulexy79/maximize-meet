@@ -39,10 +39,10 @@ export async function POST(req: NextRequest) {
       const gcpBucket = process.env.FIREBASE_STORAGE_BUCKET || "";
       const gcpCredentials = process.env.GCP_CREDENTIALS || "";
       
-      let outputCase: any = { case: undefined };
+      let output: any = undefined;
 
       if (s3Bucket && s3AccessKey && s3SecretKey) {
-        outputCase = {
+        output = {
           case: "s3",
           value: new S3Upload({
             accessKey: s3AccessKey,
@@ -53,16 +53,19 @@ export async function POST(req: NextRequest) {
           }),
         };
       } else if (gcpBucket && gcpCredentials && gcpCredentials.includes("{")) {
-        outputCase = {
+        output = {
           case: "gcp",
-          value: new GCPUpload({ credentials: gcpCredentials, bucket: gcpBucket }),
+          value: new GCPUpload({
+            credentials: gcpCredentials,
+            bucket: gcpBucket,
+          }),
         };
       }
 
       const fileOutput = new EncodedFileOutput({
         fileType: EncodedFileType.OGG,
         filepath: `recordings/${roomName}-{time}.ogg`,
-        output: outputCase,
+        output,
       });
 
       const egress = await egressClient.startRoomCompositeEgress(
