@@ -69,6 +69,10 @@ export async function POST(req: NextRequest) {
         }
         break;
 
+      case "deleteRoom":
+        await roomService.deleteRoom(roomName);
+        break;
+
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }

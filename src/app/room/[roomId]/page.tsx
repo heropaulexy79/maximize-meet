@@ -48,6 +48,9 @@ import {
   PartyPopper,
   Laugh,
   MoreVertical,
+  X,
+  AlertCircle,
+  Power
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,6 +66,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ParticipantsSidebar } from "@/components/room/ParticipantsSidebar";
@@ -150,8 +154,8 @@ function CustomControlDock({
   isAdmin,
   unreadChat,
   lastMessage,
+  setLeaveOpen,
 }: any) {
-  const router = useRouter();
   const room = useRoomContext();
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
     useLocalParticipant();
@@ -269,7 +273,7 @@ function CustomControlDock({
             )}
           </div>
 
-          <Button variant="destructive" onClick={() => router.push("/dashboard")} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
+          <Button variant="destructive" onClick={() => setLeaveOpen(true)} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
             <LogOut className="w-4 h-4 md:w-5 md:h-5" />
           </Button>
         </TooltipProvider>
@@ -362,6 +366,62 @@ function GuestNameDialog({ open, onJoin }: { open: boolean; onJoin: (name: strin
   );
 }
 
+// ─── Leave Meeting Dialog ─────────────────────────────────────────────────────
+function LeaveMeetingDialog({ open, onOpenChange, onLeave, onEndForAll, isAdmin }: any) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="bg-zinc-950 border-white/10 rounded-[2.5rem] p-8 max-w-md w-[95%]">
+        <DialogHeader className="flex flex-col items-center text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center border border-red-500/20">
+            <AlertCircle className="w-8 h-8 text-red-500" />
+          </div>
+          <DialogTitle className="text-2xl font-bold text-white tracking-tight">Ready to leave?</DialogTitle>
+          <DialogDescription className="text-zinc-400 text-balance">
+            Select how you would like to exit this leadership session.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid gap-3 mt-8">
+          <Button 
+            variant="ghost" 
+            onClick={onLeave}
+            className="w-full h-14 rounded-2xl bg-white/5 hover:bg-white/10 text-white font-bold border border-white/5 flex items-center justify-between px-6"
+          >
+            <div className="flex items-center gap-4">
+              <LogOut className="w-5 h-5 text-zinc-400" />
+              <div className="text-left">
+                <p className="text-sm">Leave Meeting</p>
+                <p className="text-[10px] text-zinc-500 font-medium">Others will continue the session</p>
+              </div>
+            </div>
+          </Button>
+
+          {isAdmin && (
+            <Button 
+              onClick={onEndForAll}
+              className="w-full h-14 rounded-2xl bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white font-bold border border-red-500/20 hover:border-red-500 flex items-center justify-between px-6 transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <Power className="w-5 h-5 text-red-500 group-hover:text-white" />
+                <div className="text-left">
+                  <p className="text-sm">End Meeting for All</p>
+                  <p className="text-[10px] opacity-60 font-medium">Conclude session for the entire cohort</p>
+                </div>
+              </div>
+            </Button>
+          )}
+        </div>
+
+        <DialogFooter className="mt-4">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="w-full h-12 text-zinc-500 hover:text-white hover:bg-transparent font-bold">
+            Cancel
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ─── Invite Dialog ─────────────────────────────────────────────────────────────
 function InviteDialog({ open, onClose, roomId }: any) {
   const [copied, setCopied] = useState(false);
@@ -403,12 +463,14 @@ function InviteDialog({ open, onClose, roomId }: any) {
 // ─── Main Room Page ────────────────────────────────────────────────────────────
 export default function RoomPage() {
   useWakeLock(true);
+  const router = useRouter();
   const { roomId } = useParams();
   const { user, isAdmin, loading: authLoading } = useAuth();
   const [token, setToken] = useState("");
   const [guestName, setGuestName] = useState("");
   const [showNameEntry, setShowNameEntry] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [participantsSidebarOpen, setParticipantsSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [interactionsOpen, setInteractionsOpen] = useState(false);
@@ -459,6 +521,33 @@ export default function RoomPage() {
     }
   }, [chatOpen]);
 
+  const handleEndForAll = async () => {
+    try {
+      const idToken = await user?.getIdToken();
+      const res = await fetch("/api/livekit/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          action: "deleteRoom",
+          roomName: roomId
+        })
+      });
+      
+      if (res.ok) {
+        toast.success("Meeting ended for all.");
+        router.push("/dashboard");
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to end meeting.");
+      }
+    } catch (error) {
+      toast.error("An error occurred while ending the meeting.");
+    }
+  };
+
   if (!token) return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center gap-6">
       <GuestNameDialog open={showNameEntry} onJoin={(name) => setGuestName(name)} />
@@ -478,6 +567,10 @@ export default function RoomPage() {
         serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
         connect={true}
         className="flex-1 flex flex-col min-h-0"
+        onDisconnected={() => {
+          toast.info("Disconnected from meeting.");
+          router.push("/dashboard");
+        }}
       >
         <RoomEventsListener />
         
@@ -496,7 +589,6 @@ export default function RoomPage() {
               <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} roomId={roomId as string} />
             </div>
             
-            {/* Chat Sidebar is ALWAYS MOUNTED to keep messages alive */}
             <div className={cn("h-full", !chatOpen && "hidden")}>
               <ChatSidebarWrapper 
                 onNewMessage={(msg) => {
@@ -523,6 +615,7 @@ export default function RoomPage() {
             isRecording={isRecording}
             setIsRecording={setIsRecording}
             setInviteOpen={setInviteOpen}
+            setLeaveOpen={setLeaveOpen}
             participantsSidebarOpen={participantsSidebarOpen}
             setParticipantsSidebarOpen={setParticipantsSidebarOpen}
             chatOpen={chatOpen}
@@ -539,6 +632,15 @@ export default function RoomPage() {
         </div>
 
         <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} roomId={roomId} />
+        
+        <LeaveMeetingDialog 
+          open={leaveOpen} 
+          onOpenChange={setLeaveOpen}
+          onLeave={() => router.push("/dashboard")}
+          onEndForAll={handleEndForAll}
+          isAdmin={isAdmin}
+        />
+
         <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
@@ -568,6 +670,7 @@ function RoomContextWrapper({
   isRecording, 
   setIsRecording, 
   setInviteOpen,
+  setLeaveOpen,
   participantsSidebarOpen,
   setParticipantsSidebarOpen,
   chatOpen,
@@ -602,6 +705,7 @@ function RoomContextWrapper({
       onStartRecording={() => setIsRecording(true)}
       onStopRecording={() => setIsRecording(false)}
       setInviteOpen={setInviteOpen}
+      setLeaveOpen={setLeaveOpen}
       setParticipantsSidebarOpen={setParticipantsSidebarOpen}
       participantsSidebarOpen={participantsSidebarOpen}
       chatOpen={chatOpen}
