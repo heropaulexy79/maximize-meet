@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     }
   } else {
     // Guest user - prefix username to distinguish
-    finalUsername = `Guest: ${username}`;
+    finalUsername = username;
   }
 
   const apiKey = process.env.LIVEKIT_API_KEY || "placeholder-key";

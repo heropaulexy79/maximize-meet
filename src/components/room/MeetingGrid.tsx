@@ -302,8 +302,8 @@ function ParticipantOverlay({ participant, isCameraOn, compact = false }: { part
       <div className="flex items-end">
         <div className="flex flex-col gap-1 items-start max-w-[90%]">
           {isScholar && !compact && (
-            <div className="px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-[8px] font-bold text-primary uppercase tracking-[0.2em] mb-1">
-              Cohort Member
+            <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-bold text-primary mb-1">
+              G
             </div>
           )}
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 w-full overflow-hidden">
