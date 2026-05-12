@@ -100,26 +100,6 @@ function SessionTimer() {
   );
 }
 
-// ─── Global Chat Synchronizer ──────────────────────────────────────────────────
-function ChatSynchronizer({ onNewMessage, chatOpen }: { onNewMessage: (msg: any) => void; chatOpen: boolean }) {
-  const { chatMessages } = useChat();
-  const prevCountRef = useRef(0);
-
-  useEffect(() => {
-    const currentCount = chatMessages.length;
-    if (currentCount > prevCountRef.current) {
-      const newMsgs = chatMessages.slice(prevCountRef.current);
-      newMsgs.forEach(msg => {
-        // Only notify if chat is closed or it's a remote message
-        onNewMessage(msg);
-      });
-    }
-    prevCountRef.current = currentCount;
-  }, [chatMessages, onNewMessage]);
-
-  return null;
-}
-
 // ─── Data Listener Component ───────────────────────────────────────────────────
 function RoomEventsListener() {
   const room = useRoomContext();
@@ -500,17 +480,6 @@ export default function RoomPage() {
         className="flex-1 flex flex-col min-h-0"
       >
         <RoomEventsListener />
-        <ChatSynchronizer 
-          chatOpen={chatOpen}
-          onNewMessage={(msg) => {
-            if (!chatOpen) {
-              setUnreadChat(prev => prev + 1);
-              setLastMessage(msg);
-              // Auto-clear preview after 5s
-              setTimeout(() => setLastMessage(null), 5000);
-            }
-          }} 
-        />
         
         {/* Main Interaction Area */}
         <div className="flex-1 flex overflow-hidden relative">
@@ -530,7 +499,13 @@ export default function RoomPage() {
                   <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} roomId={roomId as string} />
                 )}
                 {chatOpen && (
-                  <ChatSidebar onClose={() => setChatOpen(false)} />
+                  <ChatWrapper onNewMessage={(msg) => {
+                    if (!chatOpen) {
+                      setUnreadChat(prev => prev + 1);
+                      setLastMessage(msg);
+                      setTimeout(() => setLastMessage(null), 5000);
+                    }
+                  }} onClose={() => setChatOpen(false)} />
                 )}
                 {interactionsOpen && (
                   <InteractionsSidebar onClose={() => setInteractionsOpen(false)} />
@@ -539,6 +514,17 @@ export default function RoomPage() {
             )}
           </AnimatePresence>
         </div>
+
+        {/* Hidden always-on chat synchronization */}
+        {!chatOpen && (
+          <div className="hidden">
+            <ChatWrapper onNewMessage={(msg) => {
+              setUnreadChat(prev => prev + 1);
+              setLastMessage(msg);
+              setTimeout(() => setLastMessage(null), 5000);
+            }} onClose={() => {}} />
+          </div>
+        )}
 
         {/* Control Footer */}
         <div className="relative">
@@ -567,6 +553,23 @@ export default function RoomPage() {
       </LiveKitRoom>
     </div>
   );
+}
+
+// ─── Chat Wrapper ─────────────────────────────────────────────────────────────
+function ChatWrapper({ onNewMessage, onClose }: { onNewMessage: (msg: any) => void; onClose: () => void }) {
+  const { chatMessages } = useChat();
+  const prevCountRef = useRef(0);
+
+  useEffect(() => {
+    const currentCount = chatMessages.length;
+    if (currentCount > prevCountRef.current) {
+      const newMsgs = chatMessages.slice(prevCountRef.current);
+      newMsgs.forEach(msg => onNewMessage(msg));
+    }
+    prevCountRef.current = currentCount;
+  }, [chatMessages, onNewMessage]);
+
+  return <ChatSidebar onClose={onClose} />;
 }
 
 // ─── Room Context Wrapper ──────────────────────────────────────────────────────
