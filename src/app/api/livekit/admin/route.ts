@@ -73,6 +73,11 @@ export async function POST(req: NextRequest) {
         await roomService.deleteRoom(roomName);
         break;
 
+      case "updateRoom":
+        const { metadata } = await req.json();
+        await roomService.updateRoomMetadata(roomName, metadata);
+        break;
+
       default:
         return NextResponse.json({ error: "Invalid action" }, { status: 400 });
     }

@@ -83,6 +83,30 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+// ─── Recording Indicator ──────────────────────────────────────────────────────
+function RecordingIndicator({ isRecording }: { isRecording: boolean }) {
+  return (
+    <AnimatePresence>
+      {isRecording && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] pointer-events-none"
+        >
+          <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-red-500/10 backdrop-blur-xl border border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+            <div className="relative">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+              <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-red-500 animate-ping opacity-75" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">Recording Live</span>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Session Timer ─────────────────────────────────────────────────────────────
 function SessionTimer() {
   const [seconds, setSeconds] = useState(0);
@@ -104,13 +128,14 @@ function SessionTimer() {
   );
 }
 
-// ─── Data Listener Component ───────────────────────────────────────────────────
-function RoomEventsListener() {
+// ─── Data & Metadata Listener ──────────────────────────────────────────────────
+function RoomEventsListener({ onRecordingChange }: { onRecordingChange: (rec: boolean) => void }) {
   const room = useRoomContext();
   
   useEffect(() => {
     if (!room) return;
 
+    // Handle Data (Reactions)
     const handleData = (payload: Uint8Array, participant: any) => {
       try {
         const str = new TextDecoder().decode(payload);
@@ -126,11 +151,30 @@ function RoomEventsListener() {
       }
     };
 
+    // Handle Metadata (Recording sync)
+    const handleMetadata = (metadata: string | undefined) => {
+      if (!metadata) return;
+      try {
+        const data = JSON.parse(metadata);
+        if (typeof data.isRecording === "boolean") {
+          onRecordingChange(data.isRecording);
+        }
+      } catch (e) {
+        console.error("Error parsing room metadata:", e);
+      }
+    };
+
+    // Initial check
+    handleMetadata(room.metadata);
+
     room.on(RoomEvent.DataReceived, handleData);
+    room.on(RoomEvent.RoomMetadataChanged, handleMetadata);
+    
     return () => {
       room.off(RoomEvent.DataReceived, handleData);
+      room.off(RoomEvent.RoomMetadataChanged, handleMetadata);
     };
-  }, [room]);
+  }, [room, onRecordingChange]);
 
   return null;
 }
@@ -138,8 +182,7 @@ function RoomEventsListener() {
 // ─── Control Dock ─────────────────────────────────────────────────────────────
 function CustomControlDock({
   isRecording,
-  onStartRecording,
-  onStopRecording,
+  onToggleRecording,
   setInviteOpen,
   setParticipantsSidebarOpen,
   participantsSidebarOpen,
@@ -264,7 +307,7 @@ function CustomControlDock({
             </TrackToggle>
 
             {isAdmin && (
-              <Button variant="ghost" onClick={isRecording ? onStopRecording : onStartRecording} className={cn(
+              <Button variant="ghost" onClick={onToggleRecording} className={cn(
                 "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
                 isRecording ? "bg-red-500/20 border-red-500 text-red-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
               )}>
@@ -572,7 +615,8 @@ export default function RoomPage() {
           router.push("/dashboard");
         }}
       >
-        <RoomEventsListener />
+        <RecordingIndicator isRecording={isRecording} />
+        <RoomEventsListener onRecordingChange={setIsRecording} />
         
         {/* Main Interaction Area */}
         <div className="flex-1 flex overflow-hidden relative">
@@ -611,9 +655,11 @@ export default function RoomPage() {
         {/* Control Footer */}
         <div className="relative">
           <RoomContextWrapper 
+            user={user}
+            roomId={roomId}
             isAdmin={isAdmin}
             isRecording={isRecording}
-            setIsRecording={setIsRecording}
+            onToggleRecording={(rec: boolean) => setIsRecording(rec)}
             setInviteOpen={setInviteOpen}
             setLeaveOpen={setLeaveOpen}
             participantsSidebarOpen={participantsSidebarOpen}
@@ -666,9 +712,11 @@ function ChatSidebarWrapper({ onNewMessage, onClose }: { onNewMessage: (msg: any
 
 // ─── Room Context Wrapper ──────────────────────────────────────────────────────
 function RoomContextWrapper({ 
+  user,
+  roomId,
   isAdmin, 
   isRecording, 
-  setIsRecording, 
+  onToggleRecording, 
   setInviteOpen,
   setLeaveOpen,
   participantsSidebarOpen,
@@ -699,11 +747,46 @@ function RoomContextWrapper({
     }
   };
 
+  const handleToggleRecording = async () => {
+    if (!room) return;
+    const newState = !isRecording;
+    
+    try {
+      const idToken = await user?.getIdToken();
+      const res = await fetch("/api/livekit/admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          action: "updateRoom",
+          roomName: roomId,
+          metadata: JSON.stringify({ isRecording: newState })
+        })
+      });
+
+      if (res.ok) {
+        onToggleRecording(newState);
+        if (newState) {
+          toast.success("Recording started");
+        } else {
+          toast.info("Recording stopped");
+        }
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Failed to update recording status");
+      }
+    } catch (error) {
+      console.error("Failed to update recording metadata:", error);
+      toast.error("Failed to update recording status");
+    }
+  };
+
   return (
     <CustomControlDock
       isRecording={isRecording}
-      onStartRecording={() => setIsRecording(true)}
-      onStopRecording={() => setIsRecording(false)}
+      onToggleRecording={handleToggleRecording}
       setInviteOpen={setInviteOpen}
       setLeaveOpen={setLeaveOpen}
       setParticipantsSidebarOpen={setParticipantsSidebarOpen}
