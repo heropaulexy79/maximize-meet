@@ -487,44 +487,34 @@ export default function RoomPage() {
             <MeetingGrid layout={layout} />
           </div>
 
-          <AnimatePresence>
-            {(participantsSidebarOpen || chatOpen || interactionsOpen) && (
-              <motion.div
-                initial={{ opacity: 0, x: "100%" }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: "100%" }}
-                className="absolute md:relative right-0 top-0 bottom-0 w-full md:w-96 bg-zinc-950 border-l border-white/5 h-full z-[100] flex flex-col shadow-2xl"
-              >
-                {participantsSidebarOpen && (
-                  <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} roomId={roomId as string} />
-                )}
-                {chatOpen && (
-                  <ChatWrapper onNewMessage={(msg) => {
-                    if (!chatOpen) {
-                      setUnreadChat(prev => prev + 1);
-                      setLastMessage(msg);
-                      setTimeout(() => setLastMessage(null), 5000);
-                    }
-                  }} onClose={() => setChatOpen(false)} />
-                )}
-                {interactionsOpen && (
-                  <InteractionsSidebar onClose={() => setInteractionsOpen(false)} />
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Hidden always-on chat synchronization */}
-        {!chatOpen && (
-          <div className="hidden">
-            <ChatWrapper onNewMessage={(msg) => {
-              setUnreadChat(prev => prev + 1);
-              setLastMessage(msg);
-              setTimeout(() => setLastMessage(null), 5000);
-            }} onClose={() => {}} />
+          {/* Persistent Sidebar Container */}
+          <div className={cn(
+            "fixed md:relative right-0 top-0 bottom-0 w-full md:w-96 bg-zinc-950 border-l border-white/5 h-full z-[100] flex flex-col shadow-2xl transition-transform duration-300 ease-in-out",
+            (participantsSidebarOpen || chatOpen || interactionsOpen) ? "translate-x-0" : "translate-x-full md:hidden"
+          )}>
+            <div className={cn("h-full", !participantsSidebarOpen && "hidden")}>
+              <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} roomId={roomId as string} />
+            </div>
+            
+            {/* Chat Sidebar is ALWAYS MOUNTED to keep messages alive */}
+            <div className={cn("h-full", !chatOpen && "hidden")}>
+              <ChatSidebarWrapper 
+                onNewMessage={(msg) => {
+                  if (!chatOpen) {
+                    setUnreadChat(prev => prev + 1);
+                    setLastMessage(msg);
+                    setTimeout(() => setLastMessage(null), 5000);
+                  }
+                }}
+                onClose={() => setChatOpen(false)} 
+              />
+            </div>
+            
+            <div className={cn("h-full", !interactionsOpen && "hidden")}>
+              <InteractionsSidebar onClose={() => setInteractionsOpen(false)} />
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Control Footer */}
         <div className="relative">
@@ -555,8 +545,8 @@ export default function RoomPage() {
   );
 }
 
-// ─── Chat Wrapper ─────────────────────────────────────────────────────────────
-function ChatWrapper({ onNewMessage, onClose }: { onNewMessage: (msg: any) => void; onClose: () => void }) {
+// ─── Chat Sidebar Wrapper ──────────────────────────────────────────────────────
+function ChatSidebarWrapper({ onNewMessage, onClose }: { onNewMessage: (msg: any) => void; onClose: () => void }) {
   const { chatMessages } = useChat();
   const prevCountRef = useRef(0);
 
