@@ -136,52 +136,45 @@ function CustomControlDock({
   };
 
   return (
-    <div className="flex items-center justify-between w-full px-6 py-4 bg-zinc-950/80 backdrop-blur-3xl border-t border-white/5">
-      {/* Session Info */}
+    <div className="flex items-center justify-center md:justify-between w-full px-4 md:px-6 py-4 bg-zinc-950/90 backdrop-blur-3xl border-t border-white/5">
+      {/* Session Info - Hidden on Mobile */}
       <div className="hidden lg:flex items-center gap-6">
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Live Academy Session</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1 text-glow">Live Academy Session</span>
           <SessionTimer />
         </div>
       </div>
 
-      {/* Main Controls - Compact */}
-      <div className="flex items-center gap-2 md:gap-3 bg-white/5 p-1.5 rounded-2xl border border-white/5">
+      {/* Main Controls - Perfectly Centered on Mobile */}
+      <div className="flex items-center gap-1.5 md:gap-3 bg-white/5 p-1.5 rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl">
         <TooltipProvider>
           <TrackToggle source={Track.Source.Microphone} showIcon={false} className={cn(
-            "flex items-center justify-center w-11 h-11 md:w-12 md:h-12 rounded-xl transition-all border duration-300",
+            "flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
             !isMicrophoneEnabled ? "bg-red-500/20 border-red-500/50 text-red-500" : "bg-transparent border-transparent hover:bg-white/5 text-white"
           )}>
-            {isMicrophoneEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+            {isMicrophoneEnabled ? <Mic className="w-4 h-4 md:w-5 md:h-5" /> : <MicOff className="w-4 h-4 md:w-5 md:h-5" />}
           </TrackToggle>
 
           <TrackToggle source={Track.Source.Camera} showIcon={false} className={cn(
-            "flex items-center justify-center w-11 h-11 md:w-12 md:h-12 rounded-xl transition-all border duration-300",
+            "flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
             !isCameraEnabled ? "bg-red-500/20 border-red-500/50 text-red-500" : "bg-transparent border-transparent hover:bg-white/5 text-white"
           )}>
-            {isCameraEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+            {isCameraEnabled ? <Video className="w-4 h-4 md:w-5 md:h-5" /> : <VideoOff className="w-4 h-4 md:w-5 md:h-5" />}
           </TrackToggle>
 
           <Button variant="ghost" onClick={toggleHand} className={cn(
-            "w-11 h-11 md:w-12 md:h-12 rounded-xl transition-all border duration-300",
+            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
             isHandRaised ? "bg-amber-500/20 border-amber-500/50 text-amber-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
           )}>
-            <Hand className="w-5 h-5" />
+            <Hand className="w-4 h-4 md:w-5 md:h-5" />
           </Button>
 
-          <Separator orientation="vertical" className="h-8 bg-white/10 mx-1" />
-
-          <Button variant="ghost" onClick={() => setIsBlurred(!isBlurred)} className={cn(
-            "w-11 h-11 md:w-12 md:h-12 rounded-xl hidden md:flex border transition-all duration-300",
-            isBlurred ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white hover:bg-white/5"
-          )}>
-            <Sparkles className="w-5 h-5" />
-          </Button>
+          <Separator orientation="vertical" className="h-6 md:h-8 bg-white/10 mx-0.5 md:mx-1" />
 
           <DropdownMenu>
             <DropdownMenuTrigger>
-              <Button variant="ghost" className="w-11 h-11 md:w-12 md:h-12 rounded-xl bg-transparent border-transparent text-white hover:bg-white/5">
-                <Smile className="w-5 h-5" />
+              <Button variant="ghost" className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-transparent border-transparent text-white hover:bg-white/5">
+                <Smile className="w-4 h-4 md:w-5 md:h-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="glass border-white/10 p-2 mb-4 grid grid-cols-3 gap-1">
@@ -192,31 +185,31 @@ function CustomControlDock({
           </DropdownMenu>
 
           <TrackToggle source={Track.Source.ScreenShare} showIcon={false} className={cn(
-            "hidden md:flex items-center justify-center w-11 h-11 md:w-12 md:h-12 rounded-xl transition-all border duration-300",
+            "hidden md:flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
             isScreenShareEnabled ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
           )}>
-            <MonitorUp className="w-5 h-5" />
+            <MonitorUp className="w-4 h-4 md:w-5 md:h-5" />
           </TrackToggle>
 
           {isAdmin && (
             <Button variant="ghost" onClick={isRecording ? onStopRecording : onStartRecording} className={cn(
-              "w-11 h-11 md:w-12 md:h-12 rounded-xl transition-all border duration-300",
+              "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
               isRecording ? "bg-red-500/20 border-red-500 text-red-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
             )}>
-              {isRecording ? <CircleStop className="w-5 h-5" /> : <CircleDot className="w-5 h-5" />}
+              {isRecording ? <CircleStop className="w-4 h-4 md:w-5 md:h-5" /> : <CircleDot className="w-4 h-4 md:w-5 md:h-5" />}
             </Button>
           )}
 
-          <Separator orientation="vertical" className="h-8 bg-white/10 mx-1" />
+          <Separator orientation="vertical" className="h-6 md:h-8 bg-white/10 mx-0.5 md:mx-1" />
 
-          <Button variant="destructive" onClick={() => router.push("/dashboard")} className="w-14 h-11 md:h-12 rounded-xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
-            <LogOut className="w-5 h-5" />
+          <Button variant="destructive" onClick={() => router.push("/dashboard")} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
+            <LogOut className="w-4 h-4 md:w-5 md:h-5" />
           </Button>
         </TooltipProvider>
       </div>
 
-      {/* Sidebars Controls */}
-      <div className="flex items-center gap-2">
+      {/* Sidebars Controls - Compact on Mobile */}
+      <div className="hidden md:flex items-center gap-2">
         <Button variant="ghost" onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)} className={cn(
           "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           participantsSidebarOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
@@ -240,6 +233,36 @@ function CustomControlDock({
         </Button>
       </div>
     </div>
+  );
+}
+
+// ─── Guest Name Dialog ────────────────────────────────────────────────────────
+function GuestNameDialog({ open, onJoin }: { open: boolean; onJoin: (name: string) => void }) {
+  const [name, setName] = useState("");
+  return (
+    <Dialog open={open}>
+      <DialogContent className="bg-zinc-950 border-white/10 rounded-[2.5rem] p-8 max-w-md w-[90%]">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold text-white text-center">Join Session</DialogTitle>
+          <DialogDescription className="text-zinc-400 text-center">Please enter your name to join the cohort.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-6 mt-4">
+          <Input 
+            value={name} 
+            onChange={(e) => setName(e.target.value)} 
+            placeholder="Your Display Name" 
+            className="bg-white/5 border-white/10 text-white rounded-xl h-12 text-center" 
+          />
+          <Button 
+            disabled={!name.trim()} 
+            onClick={() => onJoin(name)} 
+            className="w-full bg-primary hover:bg-primary/90 h-12 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-95"
+          >
+            Enter Meeting Room
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -285,8 +308,10 @@ function InviteDialog({ open, onClose, roomId }: any) {
 export default function RoomPage() {
   useWakeLock(true);
   const { roomId } = useParams();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const [token, setToken] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [showNameEntry, setShowNameEntry] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [participantsSidebarOpen, setParticipantsSidebarOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -299,10 +324,16 @@ export default function RoomPage() {
   const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user && !guestName) {
+      setShowNameEntry(true);
+      return;
+    }
+    
     const fetchToken = async () => {
       try {
         const idToken = user ? await user.getIdToken() : null;
-        const displayName = user?.displayName || user?.email || `Guest_${Math.floor(Math.random() * 1000)}`;
+        const displayName = user?.displayName || user?.email || guestName;
         const url = `/api/livekit?room=${roomId}&username=${encodeURIComponent(displayName)}`;
         
         const res = await fetch(url, {
@@ -312,6 +343,7 @@ export default function RoomPage() {
         const data = await res.json();
         if (data.token) {
           setToken(data.token);
+          setShowNameEntry(false);
         } else {
           toast.error(data.error || "Failed to generate token.");
         }
@@ -320,13 +352,19 @@ export default function RoomPage() {
         toast.error("Failed to connect to room.");
       }
     };
+    
     if (roomId) fetchToken();
-  }, [user, roomId]);
+  }, [user, guestName, roomId, authLoading]);
 
   if (!token) return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center gap-6">
-      <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(59,130,246,0.3)]" />
-      <p className="text-zinc-500 font-medium animate-pulse tracking-widest uppercase text-xs">Establishing Secure Connection...</p>
+      <GuestNameDialog open={showNameEntry} onJoin={(name) => setGuestName(name)} />
+      {!showNameEntry && (
+        <>
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(59,130,246,0.3)]" />
+          <p className="text-zinc-500 font-medium animate-pulse tracking-widest uppercase text-xs">Establishing Secure Connection...</p>
+        </>
+      )}
     </div>
   );
 
