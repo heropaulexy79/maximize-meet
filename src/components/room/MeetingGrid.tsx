@@ -31,6 +31,7 @@ function getParticipantColor(identity: string) {
 }
 
 function getInitials(name: string) {
+  if (!name) return "??";
   return name
     .split(" ")
     .map((n) => n[0])
@@ -63,17 +64,22 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
 
   if (layout === "spotlight") {
     const spotlightTrack = tracks.find((t) => t.participant.isSpeaking) || tracks[0];
+    if (!spotlightTrack) return null;
+
+    const isCameraOn = !!(spotlightTrack.publication && !spotlightTrack.publication.isMuted && spotlightTrack.publication.track);
+
     return (
       <div className="w-full h-full flex items-center justify-center p-4">
-        {spotlightTrack && (
-          <div className="relative w-full max-w-5xl aspect-video rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-zinc-950">
-            <ParticipantTile
-              trackRef={spotlightTrack}
-              className="w-full h-full [&>video]:object-cover [&_.lk-participant-metadata]:hidden"
-            />
-            <ParticipantOverlay participant={spotlightTrack.participant} isCameraOn={!!(spotlightTrack.publication?.isSubscribed && !spotlightTrack.publication?.isMuted)} />
-          </div>
-        )}
+        <div className="relative w-full max-w-5xl aspect-video rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-zinc-950">
+          <ParticipantTile
+            trackRef={spotlightTrack}
+            className="w-full h-full [&>video]:object-cover [&_.lk-participant-metadata]:hidden"
+          />
+          <ParticipantOverlay 
+            participant={spotlightTrack.participant} 
+            isCameraOn={isCameraOn} 
+          />
+        </div>
       </div>
     );
   }
@@ -85,9 +91,8 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
       >
         <AnimatePresence mode="popLayout">
           {currentTracks.map((trackRef, idx) => {
-            const isCameraOn = !!(trackRef.source === Track.Source.Camera && 
-                             trackRef.publication?.isSubscribed && 
-                             !trackRef.publication?.isMuted);
+            // Robust camera detection: check if publication exists, is not muted, and has a track
+            const isCameraOn = !!(trackRef.publication && !trackRef.publication.isMuted && trackRef.publication.track);
             
             return (
               <motion.div
@@ -185,7 +190,7 @@ function ParticipantOverlay({ participant, isCameraOn }: { participant: any; isC
     catch { return {}; }
   })();
   const isHandRaised = metadata.handRaised;
-  const colorClass = getParticipantColor(participant.identity);
+  const colorClass = getParticipantColor(participant.identity || participant.sid);
   const initials = getInitials(participant.name || participant.identity || "User");
 
   return (
