@@ -48,6 +48,10 @@ export async function GET(req: NextRequest) {
 
   const at = new AccessToken(apiKey, apiSecret, {
     identity: finalUsername,
+    metadata: JSON.stringify({
+      role: isAdmin ? "admin" : "member",
+      isGuest: !authHeader
+    })
   });
 
   // Grant roomAdmin privileges if the user is an admin

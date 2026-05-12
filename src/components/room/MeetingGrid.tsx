@@ -235,13 +235,11 @@ function ParticipantOverlay({ participant, isCameraOn, compact = false }: { part
     catch { return {}; }
   })();
   
+  const isGuest = metadata.isGuest;
   const isHandRaised = metadata.handRaised;
   const isMuted = !participant.isMicrophoneEnabled;
   const colorClass = getParticipantColor(participant.identity || participant.sid);
   const initials = getInitials(participant.name || participant.identity || "User");
-  
-  // Sophisticated check: If it's not a known email/auth, mark as "Cohort Member"
-  const isScholar = !participant.identity?.includes("@") && !participant.isLocal;
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col justify-between p-2 md:p-3 pointer-events-none">
@@ -301,7 +299,7 @@ function ParticipantOverlay({ participant, isCameraOn, compact = false }: { part
       {/* Bottom section: Name label */}
       <div className="flex items-end">
         <div className="flex flex-col gap-1 items-start max-w-[90%]">
-          {isScholar && !compact && (
+          {isGuest && !compact && (
             <div className="w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-[10px] font-bold text-primary mb-1">
               G
             </div>
