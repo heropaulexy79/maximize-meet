@@ -162,45 +162,81 @@ function CustomControlDock({
             {isCameraEnabled ? <Video className="w-4 h-4 md:w-5 md:h-5" /> : <VideoOff className="w-4 h-4 md:w-5 md:h-5" />}
           </TrackToggle>
 
+          {/* Desktop Only Hand Raised */}
           <Button variant="ghost" onClick={toggleHand} className={cn(
-            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+            "hidden md:flex w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
             isHandRaised ? "bg-amber-500/20 border-amber-500/50 text-amber-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
           )}>
             <Hand className="w-4 h-4 md:w-5 md:h-5" />
           </Button>
 
+          {/* Mobile "More" Toggle */}
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button variant="ghost" className="w-10 h-10 rounded-xl bg-white/5 border-white/10 text-white">
+                  <MoreVertical className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="glass border-white/10 p-2 mb-4 min-w-[200px] space-y-1">
+                <DropdownMenuItem onClick={() => setChatOpen(true)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer">
+                  <MessageSquare className="w-4 h-4 text-primary" />
+                  <span className="font-medium">Open Chat</span>
+                  {unreadChat > 0 && <div className="ml-auto w-2 h-2 bg-primary rounded-full" />}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setParticipantsSidebarOpen(true)} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="font-medium">Participants</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={toggleHand} className={cn("flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer", isHandRaised && "bg-amber-500/10")}>
+                  <Hand className={cn("w-4 h-4", isHandRaised ? "text-amber-500" : "text-primary")} />
+                  <span className="font-medium">{isHandRaised ? "Lower Hand" : "Raise Hand"}</span>
+                </DropdownMenuItem>
+                <Separator className="bg-white/5 my-1" />
+                <div className="p-2 grid grid-cols-3 gap-1">
+                  {["💖", "👍", "👏", "🎉", "😂", "😮"].map(emoji => (
+                    <button key={emoji} onClick={() => sendReaction(emoji)} className="w-10 h-10 text-xl hover:bg-white/5 rounded-lg flex items-center justify-center">{emoji}</button>
+                  ))}
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <Separator orientation="vertical" className="h-6 md:h-8 bg-white/10 mx-0.5 md:mx-1" />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-transparent border-transparent text-white hover:bg-white/5">
-                <Smile className="w-4 h-4 md:w-5 md:h-5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="glass border-white/10 p-2 mb-4 grid grid-cols-3 gap-1">
-              {["💖", "👍", "👏", "🎉", "😂", "😮"].map(emoji => (
-                <button key={emoji} onClick={() => sendReaction(emoji)} className="w-10 h-10 text-xl hover:bg-white/5 rounded-lg">{emoji}</button>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Desktop Only Extra Controls */}
+          <div className="hidden md:flex items-center gap-1.5 md:gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Button variant="ghost" className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-transparent border-transparent text-white hover:bg-white/5">
+                  <Smile className="w-4 h-4 md:w-5 md:h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="glass border-white/10 p-2 mb-4 grid grid-cols-3 gap-1">
+                {["💖", "👍", "👏", "🎉", "😂", "😮"].map(emoji => (
+                  <button key={emoji} onClick={() => sendReaction(emoji)} className="w-10 h-10 text-xl hover:bg-white/5 rounded-lg">{emoji}</button>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <TrackToggle source={Track.Source.ScreenShare} showIcon={false} className={cn(
-            "hidden md:flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
-            isScreenShareEnabled ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
-          )}>
-            <MonitorUp className="w-4 h-4 md:w-5 md:h-5" />
-          </TrackToggle>
-
-          {isAdmin && (
-            <Button variant="ghost" onClick={isRecording ? onStopRecording : onStartRecording} className={cn(
-              "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
-              isRecording ? "bg-red-500/20 border-red-500 text-red-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
+            <TrackToggle source={Track.Source.ScreenShare} showIcon={false} className={cn(
+              "items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+              isScreenShareEnabled ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
             )}>
-              {isRecording ? <CircleStop className="w-4 h-4 md:w-5 md:h-5" /> : <CircleDot className="w-4 h-4 md:w-5 md:h-5" />}
-            </Button>
-          )}
+              <MonitorUp className="w-4 h-4 md:w-5 md:h-5" />
+            </TrackToggle>
 
-          <Separator orientation="vertical" className="h-6 md:h-8 bg-white/10 mx-0.5 md:mx-1" />
+            {isAdmin && (
+              <Button variant="ghost" onClick={isRecording ? onStopRecording : onStartRecording} className={cn(
+                "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+                isRecording ? "bg-red-500/20 border-red-500 text-red-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
+              )}>
+                {isRecording ? <CircleStop className="w-4 h-4 md:w-5 md:h-5" /> : <CircleDot className="w-4 h-4 md:w-5 md:h-5" />}
+              </Button>
+            )}
+          </div>
+
+          <Separator orientation="vertical" className="h-6 md:h-8 bg-white/10 mx-0.5 md:mx-1 md:hidden" />
 
           <Button variant="destructive" onClick={() => router.push("/dashboard")} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
             <LogOut className="w-4 h-4 md:w-5 md:h-5" />
@@ -208,8 +244,8 @@ function CustomControlDock({
         </TooltipProvider>
       </div>
 
-      {/* Sidebars Controls - Responsive */}
-      <div className="flex items-center gap-1.5 md:gap-2">
+      {/* Sidebars Controls - Desktop Only */}
+      <div className="hidden md:flex items-center gap-1.5 md:gap-2">
         <Button variant="ghost" onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)} className={cn(
           "w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           participantsSidebarOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
@@ -226,7 +262,7 @@ function CustomControlDock({
         </Button>
 
         <Button variant="ghost" onClick={() => setInteractionsOpen(!interactionsOpen)} className={cn(
-          "hidden md:flex w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+          "w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           interactionsOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
         )}>
           <HelpCircle className="w-4 h-4 md:w-5 md:h-5" />
