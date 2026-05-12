@@ -136,17 +136,17 @@ function CustomControlDock({
   };
 
   return (
-    <div className="flex items-center justify-center md:justify-between w-full px-4 md:px-6 py-4 bg-zinc-950/90 backdrop-blur-3xl border-t border-white/5">
-      {/* Session Info - Hidden on Mobile */}
-      <div className="hidden lg:flex items-center gap-6">
+    <div className="flex items-center justify-between w-full px-4 md:px-6 py-4 bg-zinc-950/90 backdrop-blur-3xl border-t border-white/5">
+      {/* Session Info - Compact on Mobile */}
+      <div className="flex items-center gap-3 md:gap-6">
         <div className="flex flex-col">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-primary mb-1 text-glow">Live Academy Session</span>
+          <span className="hidden md:block text-[10px] font-bold uppercase tracking-widest text-primary mb-1 text-glow">Live Academy Session</span>
           <SessionTimer />
         </div>
       </div>
 
-      {/* Main Controls - Perfectly Centered on Mobile */}
-      <div className="flex items-center gap-1.5 md:gap-3 bg-white/5 p-1.5 rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl">
+      {/* Main Controls */}
+      <div className="flex items-center gap-1 md:gap-3 bg-white/5 p-1 md:p-1.5 rounded-2xl md:rounded-3xl border border-white/5 shadow-2xl">
         <TooltipProvider>
           <TrackToggle source={Track.Source.Microphone} showIcon={false} className={cn(
             "flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
@@ -162,13 +162,19 @@ function CustomControlDock({
             {isCameraEnabled ? <Video className="w-4 h-4 md:w-5 md:h-5" /> : <VideoOff className="w-4 h-4 md:w-5 md:h-5" />}
           </TrackToggle>
 
-          {/* Desktop Only Hand Raised */}
-          <Button variant="ghost" onClick={toggleHand} className={cn(
-            "hidden md:flex w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
-            isHandRaised ? "bg-amber-500/20 border-amber-500/50 text-amber-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
-          )}>
-            <Hand className="w-4 h-4 md:w-5 md:h-5" />
-          </Button>
+          {/* Reactions - Always Visible */}
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <Button variant="ghost" className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-transparent border-transparent text-white hover:bg-white/5">
+                <Smile className="w-4 h-4 md:w-5 md:h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="glass border-white/10 p-2 mb-4 grid grid-cols-3 gap-1">
+              {["💖", "👍", "👏", "🎉", "😂", "😮"].map(emoji => (
+                <button key={emoji} onClick={() => sendReaction(emoji)} className="w-10 h-10 text-xl hover:bg-white/5 rounded-lg flex items-center justify-center">{emoji}</button>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Mobile "More" Toggle */}
           <div className="md:hidden">
@@ -192,12 +198,6 @@ function CustomControlDock({
                   <Hand className={cn("w-4 h-4", isHandRaised ? "text-amber-500" : "text-primary")} />
                   <span className="font-medium">{isHandRaised ? "Lower Hand" : "Raise Hand"}</span>
                 </DropdownMenuItem>
-                <Separator className="bg-white/5 my-1" />
-                <div className="p-2 grid grid-cols-3 gap-1">
-                  {["💖", "👍", "👏", "🎉", "😂", "😮"].map(emoji => (
-                    <button key={emoji} onClick={() => sendReaction(emoji)} className="w-10 h-10 text-xl hover:bg-white/5 rounded-lg flex items-center justify-center">{emoji}</button>
-                  ))}
-                </div>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -206,19 +206,6 @@ function CustomControlDock({
 
           {/* Desktop Only Extra Controls */}
           <div className="hidden md:flex items-center gap-1.5 md:gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button variant="ghost" className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-transparent border-transparent text-white hover:bg-white/5">
-                  <Smile className="w-4 h-4 md:w-5 md:h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="glass border-white/10 p-2 mb-4 grid grid-cols-3 gap-1">
-                {["💖", "👍", "👏", "🎉", "😂", "😮"].map(emoji => (
-                  <button key={emoji} onClick={() => sendReaction(emoji)} className="w-10 h-10 text-xl hover:bg-white/5 rounded-lg">{emoji}</button>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
             <TrackToggle source={Track.Source.ScreenShare} showIcon={false} className={cn(
               "items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
               isScreenShareEnabled ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
@@ -235,8 +222,6 @@ function CustomControlDock({
               </Button>
             )}
           </div>
-
-          <Separator orientation="vertical" className="h-6 md:h-8 bg-white/10 mx-0.5 md:mx-1 md:hidden" />
 
           <Button variant="destructive" onClick={() => router.push("/dashboard")} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
             <LogOut className="w-4 h-4 md:w-5 md:h-5" />
