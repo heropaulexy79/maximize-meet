@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
     }
 
-    const { action, roomName, identity, trackSid } = await req.json();
+    const { action, roomName, identity, trackSid, metadata } = await req.json();
 
     if (!roomName) {
       return NextResponse.json({ error: "roomName is required" }, { status: 400 });
@@ -74,7 +74,6 @@ export async function POST(req: NextRequest) {
         break;
 
       case "updateRoom":
-        const { metadata } = await req.json();
         await roomService.updateRoomMetadata(roomName, metadata);
         break;
 
