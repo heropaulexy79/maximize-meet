@@ -6,52 +6,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Send, X, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
 
 export function ChatSidebar({
   onClose,
-  onUnreadChange,
 }: {
   onClose: () => void;
-  onUnreadChange?: (count: number) => void;
 }) {
   const { chatMessages, send } = useChat();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const prevCountRef = useRef(0);
-  const [unread, setUnread] = useState(0);
-
-  // Detect new incoming messages
-  useEffect(() => {
-    const currentCount = chatMessages.length;
-    const prevCount = prevCountRef.current;
-
-    if (currentCount > prevCount) {
-      const newMsgs = chatMessages.slice(prevCount);
-      newMsgs.forEach((msg) => {
-        const senderName = msg.from?.name || msg.from?.identity || "Someone";
-        const preview = msg.message.length > 50 ? msg.message.slice(0, 50) + "…" : msg.message;
-
-        toast(`💬 ${senderName}`, {
-          description: preview,
-          duration: 5000,
-        });
-        setUnread((u) => {
-          const next = u + 1;
-          onUnreadChange?.(next);
-          return next;
-        });
-      });
-    }
-
-    prevCountRef.current = currentCount;
-  }, [chatMessages, onUnreadChange]);
-
-  // Clear unread
-  useEffect(() => {
-    setUnread(0);
-    onUnreadChange?.(0);
-  }, [onUnreadChange]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -147,4 +110,3 @@ export function ChatSidebar({
     </div>
   );
 }
-

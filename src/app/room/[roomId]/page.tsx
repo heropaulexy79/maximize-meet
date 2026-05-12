@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   LiveKitRoom,
   RoomAudioRenderer,
   TrackToggle,
   useLocalParticipant,
   useRoomContext,
+  useChat,
 } from "@livekit/components-react";
 import "@livekit/components-styles";
 import { Track, RoomEvent } from "livekit-client";
@@ -99,6 +100,26 @@ function SessionTimer() {
   );
 }
 
+// ─── Global Chat Synchronizer ──────────────────────────────────────────────────
+function ChatSynchronizer({ onNewMessage, chatOpen }: { onNewMessage: (msg: any) => void; chatOpen: boolean }) {
+  const { chatMessages } = useChat();
+  const prevCountRef = useRef(0);
+
+  useEffect(() => {
+    const currentCount = chatMessages.length;
+    if (currentCount > prevCountRef.current) {
+      const newMsgs = chatMessages.slice(prevCountRef.current);
+      newMsgs.forEach(msg => {
+        // Only notify if chat is closed or it's a remote message
+        onNewMessage(msg);
+      });
+    }
+    prevCountRef.current = currentCount;
+  }, [chatMessages, onNewMessage]);
+
+  return null;
+}
+
 // ─── Data Listener Component ───────────────────────────────────────────────────
 function RoomEventsListener() {
   const room = useRoomContext();
@@ -144,14 +165,11 @@ function CustomControlDock({
   toggleHand,
   layout,
   setLayout,
-  showCaptions,
-  setShowCaptions,
   interactionsOpen,
   setInteractionsOpen,
-  isBlurred,
-  setIsBlurred,
   isAdmin,
   unreadChat,
+  lastMessage,
 }: any) {
   const router = useRouter();
   const room = useRoomContext();
@@ -278,7 +296,7 @@ function CustomControlDock({
       </div>
 
       {/* Sidebars Controls - Right Wing (Desktop Only) */}
-      <div className="flex-1 hidden sm:flex items-center justify-end gap-1.5 md:gap-2">
+      <div className="flex-1 hidden sm:flex items-center justify-end gap-1.5 md:gap-2 relative">
         <Button variant="ghost" onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)} className={cn(
           "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           participantsSidebarOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
@@ -286,13 +304,42 @@ function CustomControlDock({
           <Users className="w-5 h-5" />
         </Button>
 
-        <Button variant="ghost" onClick={() => setChatOpen(!chatOpen)} className={cn(
-          "relative w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
-          chatOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
-        )}>
-          <MessageSquare className="w-5 h-5" />
-          {unreadChat > 0 && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]" />}
-        </Button>
+        {/* Chat Button with Floating Preview */}
+        <div className="relative">
+          <AnimatePresence>
+            {!chatOpen && lastMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.8 }}
+                animate={{ opacity: 1, y: -65, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.8 }}
+                className="absolute left-1/2 -translate-x-1/2 w-48 bg-zinc-900 border border-white/10 rounded-2xl p-3 shadow-2xl z-50 pointer-events-none"
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-tighter truncate">
+                    {lastMessage.from?.name || lastMessage.from?.identity || "Someone"}
+                  </span>
+                  <p className="text-[11px] text-white/80 line-clamp-2 leading-tight">
+                    {lastMessage.message}
+                  </p>
+                </div>
+                <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-zinc-900 border-r border-b border-white/10 rotate-45" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <Button variant="ghost" onClick={() => setChatOpen(!chatOpen)} className={cn(
+            "relative w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+            chatOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white",
+            unreadChat > 0 && !chatOpen && "animate-pulse shadow-[0_0_15px_rgba(59,130,246,0.3)] border-primary/30"
+          )}>
+            <MessageSquare className="w-5 h-5" />
+            {unreadChat > 0 && (
+              <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white shadow-lg">
+                {unreadChat}
+              </div>
+            )}
+          </Button>
+        </div>
 
         <Button variant="ghost" onClick={() => setInteractionsOpen(!interactionsOpen)} className={cn(
           "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
@@ -387,10 +434,9 @@ export default function RoomPage() {
   const [interactionsOpen, setInteractionsOpen] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [layout, setLayout] = useState<"tiled" | "spotlight" | "sidebar">("tiled");
-  const [showCaptions, setShowCaptions] = useState(false);
-  const [isBlurred, setIsBlurred] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [lastMessage, setLastMessage] = useState<any>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -425,6 +471,14 @@ export default function RoomPage() {
     if (roomId) fetchToken();
   }, [user, guestName, roomId, authLoading]);
 
+  // Reset unread when chat opens
+  useEffect(() => {
+    if (chatOpen) {
+      setUnreadChat(0);
+      setLastMessage(null);
+    }
+  }, [chatOpen]);
+
   if (!token) return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center gap-6">
       <GuestNameDialog open={showNameEntry} onJoin={(name) => setGuestName(name)} />
@@ -446,6 +500,17 @@ export default function RoomPage() {
         className="flex-1 flex flex-col min-h-0"
       >
         <RoomEventsListener />
+        <ChatSynchronizer 
+          chatOpen={chatOpen}
+          onNewMessage={(msg) => {
+            if (!chatOpen) {
+              setUnreadChat(prev => prev + 1);
+              setLastMessage(msg);
+              // Auto-clear preview after 5s
+              setTimeout(() => setLastMessage(null), 5000);
+            }
+          }} 
+        />
         
         {/* Main Interaction Area */}
         <div className="flex-1 flex overflow-hidden relative">
@@ -465,7 +530,7 @@ export default function RoomPage() {
                   <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} roomId={roomId as string} />
                 )}
                 {chatOpen && (
-                  <ChatSidebar onClose={() => setChatOpen(false)} onUnreadChange={setUnreadChat} />
+                  <ChatSidebar onClose={() => setChatOpen(false)} />
                 )}
                 {interactionsOpen && (
                   <InteractionsSidebar onClose={() => setInteractionsOpen(false)} />
@@ -493,6 +558,7 @@ export default function RoomPage() {
             setIsHandRaised={setIsHandRaised}
             layout={layout}
             setLayout={setLayout}
+            lastMessage={lastMessage}
           />
         </div>
 
@@ -519,7 +585,8 @@ function RoomContextWrapper({
   isHandRaised,
   setIsHandRaised,
   layout,
-  setLayout
+  setLayout,
+  lastMessage
 }: any) {
   const room = useRoomContext();
   
@@ -550,14 +617,11 @@ function RoomContextWrapper({
       toggleHand={handleToggleHand}
       layout={layout}
       setLayout={setLayout}
-      showCaptions={false}
-      setShowCaptions={() => {}}
       interactionsOpen={interactionsOpen}
       setInteractionsOpen={setInteractionsOpen}
-      isBlurred={false}
-      setIsBlurred={() => {}}
       isAdmin={isAdmin}
       unreadChat={unreadChat}
+      lastMessage={lastMessage}
     />
   );
 }
