@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ParticipantTile, useTracks } from "@livekit/components-react";
+import { ParticipantTile, useTracks, useRemoteParticipant } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Hand, ChevronLeft, ChevronRight, User } from "lucide-react";
+import { Hand, ChevronLeft, ChevronRight, User, MicOff, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -59,11 +59,53 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
     { onlySubscribed: false }
   );
 
-  const totalPages = Math.ceil(tracks.length / MAX_PER_PAGE);
-  const currentTracks = tracks.slice(page * MAX_PER_PAGE, (page + 1) * MAX_PER_PAGE);
+  const screenShareTrack = tracks.find((t) => t.source === Track.Source.ScreenShare);
+  const participantTracks = tracks.filter((t) => t.source === Track.Source.Camera);
 
+  // If someone is sharing screen, force a spotlight-style layout
+  if (screenShareTrack) {
+    return (
+      <div className="w-full h-full flex flex-col lg:flex-row p-2 gap-2 overflow-hidden bg-zinc-950">
+        {/* Main Screen Share Area */}
+        <div className="flex-1 relative rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl bg-black group/screen">
+          <ParticipantTile
+            trackRef={screenShareTrack}
+            className="w-full h-full [&>video]:object-contain"
+          />
+          <div className="absolute top-6 left-6 flex items-center gap-3 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 text-white z-10">
+            <Monitor className="w-4 h-4 text-primary animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-widest">
+              {screenShareTrack.participant.name || screenShareTrack.participant.identity}'s Screen
+            </span>
+          </div>
+        </div>
+
+        {/* Participants Sidebar (Right on Desktop, Bottom on Mobile) */}
+        <div className="w-full lg:w-72 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-y-auto lg:overflow-x-hidden p-1 custom-scrollbar shrink-0">
+          {participantTracks.map((trackRef) => (
+            <div 
+              key={trackRef.participant.sid} 
+              className="w-48 lg:w-full aspect-video rounded-2xl overflow-hidden border border-white/5 bg-zinc-900 shrink-0 relative"
+            >
+              <ParticipantTile
+                trackRef={trackRef}
+                className="w-full h-full [&>video]:object-cover [&_.lk-participant-metadata]:hidden"
+              />
+              <ParticipantOverlay 
+                participant={trackRef.participant} 
+                isCameraOn={!!(trackRef.publication && !trackRef.publication.isMuted && trackRef.publication.track)} 
+                compact
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Spotlight layout (e.g. for speaker)
   if (layout === "spotlight") {
-    const spotlightTrack = tracks.find((t) => t.participant.isSpeaking) || tracks[0];
+    const spotlightTrack = participantTracks.find((t) => t.participant.isSpeaking) || participantTracks[0];
     if (!spotlightTrack) return null;
 
     const isCameraOn = !!(spotlightTrack.publication && !spotlightTrack.publication.isMuted && spotlightTrack.publication.track);
@@ -84,6 +126,10 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
     );
   }
 
+  // Default Tiled Layout
+  const totalPages = Math.ceil(participantTracks.length / MAX_PER_PAGE);
+  const currentTracks = participantTracks.slice(page * MAX_PER_PAGE, (page + 1) * MAX_PER_PAGE);
+
   return (
     <div className="w-full h-full relative flex flex-col overflow-hidden">
       <div
@@ -91,7 +137,6 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
       >
         <AnimatePresence mode="popLayout">
           {currentTracks.map((trackRef, idx) => {
-            // Robust camera detection: check if publication exists, is not muted, and has a track
             const isCameraOn = !!(trackRef.publication && !trackRef.publication.isMuted && trackRef.publication.track);
             
             return (
@@ -184,14 +229,19 @@ function ReactionOverlay({ identity }: { identity: string }) {
   );
 }
 
-function ParticipantOverlay({ participant, isCameraOn }: { participant: any; isCameraOn: boolean }) {
+function ParticipantOverlay({ participant, isCameraOn, compact = false }: { participant: any; isCameraOn: boolean; compact?: boolean }) {
   const metadata = (() => {
     try { return participant.metadata ? JSON.parse(participant.metadata) : {}; }
     catch { return {}; }
   })();
+  
   const isHandRaised = metadata.handRaised;
+  const isMuted = !participant.isMicrophoneEnabled;
   const colorClass = getParticipantColor(participant.identity || participant.sid);
   const initials = getInitials(participant.name || participant.identity || "User");
+  
+  // Sophisticated check: If it's not a known email/auth, mark as "Cohort Member"
+  const isScholar = !participant.identity?.includes("@") && !participant.isLocal;
 
   return (
     <div className="absolute inset-0 z-20 flex flex-col justify-between p-2 md:p-3 pointer-events-none">
@@ -205,10 +255,12 @@ function ParticipantOverlay({ participant, isCameraOn }: { participant: any; isC
             className={cn("absolute inset-0 flex items-center justify-center border transition-all duration-700 bg-zinc-950", colorClass)}
           >
             <div className="relative">
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center text-3xl md:text-4xl font-bold tracking-tighter bg-white/5 backdrop-blur-sm border border-white/10 shadow-2xl relative z-10">
+              <div className={cn(
+                "rounded-full flex items-center justify-center font-bold tracking-tighter bg-white/5 backdrop-blur-sm border border-white/10 shadow-2xl relative z-10",
+                compact ? "w-12 h-12 text-xl" : "w-20 h-20 md:w-24 md:h-24 text-3xl md:text-4xl"
+              )}>
                 {initials}
               </div>
-              {/* Animated aura */}
               <motion.div 
                 animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
                 transition={{ duration: 4, repeat: Infinity }}
@@ -221,7 +273,7 @@ function ParticipantOverlay({ participant, isCameraOn }: { participant: any; isC
 
       {/* Top section: Hand raise & Reactions */}
       <div className="flex justify-between items-start w-full h-full relative">
-        <div className="flex justify-start">
+        <div className="flex flex-col gap-2">
           <AnimatePresence>
             {isHandRaised && (
               <motion.div
@@ -234,6 +286,13 @@ function ParticipantOverlay({ participant, isCameraOn }: { participant: any; isC
               </motion.div>
             )}
           </AnimatePresence>
+          
+          {/* Mute Indicator */}
+          {isMuted && (
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-lg bg-red-500/80 backdrop-blur-md flex items-center justify-center border border-red-400/50 shadow-lg">
+              <MicOff className="w-3.5 h-3.5 md:w-4 md:h-4 text-white" />
+            </div>
+          )}
         </div>
         
         <ReactionOverlay identity={participant.identity} />
@@ -241,20 +300,27 @@ function ParticipantOverlay({ participant, isCameraOn }: { participant: any; isC
 
       {/* Bottom section: Name label */}
       <div className="flex items-end">
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 max-w-[90%]">
-          <div
-            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-              participant.isSpeaking
-                ? "bg-primary animate-pulse shadow-[0_0_6px_rgba(59,130,246,0.8)]"
-                : participant.isLocal
-                ? "bg-cyan-400"
-                : "bg-white/30"
-            }`}
-          />
-          <span className="text-white text-[10px] md:text-xs font-semibold uppercase tracking-wider truncate">
-            {participant.name || participant.identity}
-            {participant.isLocal && " (You)"}
-          </span>
+        <div className="flex flex-col gap-1 items-start max-w-[90%]">
+          {isScholar && !compact && (
+            <div className="px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-[8px] font-bold text-primary uppercase tracking-[0.2em] mb-1">
+              Cohort Member
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 w-full overflow-hidden">
+            <div
+              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                participant.isSpeaking
+                  ? "bg-primary animate-pulse shadow-[0_0_6px_rgba(59,130,246,0.8)]"
+                  : participant.isLocal
+                  ? "bg-cyan-400"
+                  : "bg-white/30"
+              }`}
+            />
+            <span className="text-white text-[10px] md:text-xs font-semibold uppercase tracking-wider truncate">
+              {participant.name || participant.identity}
+              {participant.isLocal && " (You)"}
+            </span>
+          </div>
         </div>
       </div>
     </div>
