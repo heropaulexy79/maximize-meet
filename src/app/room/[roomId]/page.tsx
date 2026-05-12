@@ -177,7 +177,7 @@ function CustomControlDock({
           </DropdownMenu>
 
           {/* Mobile "More" Toggle */}
-          <div className="md:hidden">
+          <div className="sm:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger>
                 <Button variant="ghost" className="w-10 h-10 rounded-xl bg-white/5 border-white/10 text-white">
@@ -208,8 +208,8 @@ function CustomControlDock({
 
           <Separator orientation="vertical" className="h-6 md:h-8 bg-white/10 mx-0.5 md:mx-1" />
 
-          {/* Desktop Only Extra Controls */}
-          <div className="hidden md:flex items-center gap-1 md:gap-3">
+          {/* Tablet + Desktop Extra Controls */}
+          <div className="hidden sm:flex items-center gap-1 md:gap-3">
             <Button variant="ghost" onClick={toggleHand} className={cn(
               "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
               isHandRaised ? "bg-amber-500/20 border-amber-500/50 text-amber-500" : "bg-transparent border-transparent text-white hover:bg-white/5"
@@ -245,7 +245,7 @@ function CustomControlDock({
       </div>
 
       {/* Sidebars Controls - Right Wing (Desktop Only) */}
-      <div className="flex-1 hidden md:flex items-center justify-end gap-1.5 md:gap-2">
+      <div className="flex-1 hidden sm:flex items-center justify-end gap-1.5 md:gap-2">
         <Button variant="ghost" onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)} className={cn(
           "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           participantsSidebarOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
