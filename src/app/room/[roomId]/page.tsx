@@ -301,13 +301,17 @@ export default function RoomPage() {
   useEffect(() => {
     const fetchToken = async () => {
       try {
-        const res = await fetch("/api/livekit-token", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ room: roomId, username: user?.displayName || user?.email || "Guest" }),
+        const idToken = await user?.getIdToken();
+        const url = `/api/livekit?room=${roomId}&username=${encodeURIComponent(user?.displayName || user?.email || "Guest")}`;
+        const res = await fetch(url, {
+          headers: idToken ? { 'Authorization': `Bearer ${idToken}` } : {}
         });
         const data = await res.json();
-        setToken(data.token);
+        if (data.token) {
+          setToken(data.token);
+        } else {
+          toast.error("Failed to generate token.");
+        }
       } catch (err) {
         toast.error("Failed to connect to room.");
       }
