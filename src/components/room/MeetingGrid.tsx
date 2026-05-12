@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ParticipantTile, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -116,6 +116,44 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
   );
 }
 
+function ReactionOverlay({ identity }: { identity: string }) {
+  const [reactions, setReactions] = useState<{ id: number; emoji: string }[]>([]);
+
+  useEffect(() => {
+    const handleReaction = (e: any) => {
+      if (e.detail.identity === identity) {
+        const id = Date.now();
+        setReactions((prev) => [...prev, { id, emoji: e.detail.emoji }]);
+        setTimeout(() => {
+          setReactions((prev) => prev.filter((r) => r.id !== id));
+        }, 3000);
+      }
+    };
+
+    window.addEventListener("remote-reaction", handleReaction);
+    return () => window.removeEventListener("remote-reaction", handleReaction);
+  }, [identity]);
+
+  return (
+    <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
+      <AnimatePresence>
+        {reactions.map((r) => (
+          <motion.div
+            key={r.id}
+            initial={{ y: 20, opacity: 0, scale: 0.5 }}
+            animate={{ y: -100, opacity: 1, scale: 1.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            className="absolute text-4xl select-none"
+          >
+            {r.emoji}
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function ParticipantOverlay({ participant }: { participant: any }) {
   const metadata = (() => {
     try { return participant.metadata ? JSON.parse(participant.metadata) : {}; }
@@ -125,23 +163,28 @@ function ParticipantOverlay({ participant }: { participant: any }) {
 
   return (
     <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-2 md:p-3">
-      {/* Hand raise */}
-      <div className="flex justify-start">
-        <AnimatePresence>
-          {isHandRaised && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center shadow-lg"
-            >
-              <Hand className="w-4 h-4 fill-current text-black" />
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Top section: Hand raise & Reactions */}
+      <div className="flex justify-between items-start w-full relative h-full">
+        <div className="flex justify-start">
+          <AnimatePresence>
+            {isHandRaised && (
+              <motion.div
+                initial={{ scale: 0, rotate: -20 }}
+                animate={{ scale: 1, rotate: 0 }}
+                exit={{ scale: 0, rotate: 20 }}
+                className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.4)] border border-amber-400/50"
+              >
+                <Hand className="w-4 h-4 md:w-5 md:h-5 fill-current text-black" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+        
+        {/* Reaction Layer */}
+        <ReactionOverlay identity={participant.identity} />
       </div>
 
-      {/* Name label */}
+      {/* Bottom section: Name label */}
       <div className="flex items-end">
         <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 max-w-[90%]">
           <div

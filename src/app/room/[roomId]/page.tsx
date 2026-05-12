@@ -99,6 +99,37 @@ function SessionTimer() {
   );
 }
 
+// ─── Data Listener Component ───────────────────────────────────────────────────
+function RoomEventsListener() {
+  const room = useRoomContext();
+  
+  useEffect(() => {
+    if (!room) return;
+
+    const handleData = (payload: Uint8Array, participant: any) => {
+      try {
+        const str = new TextDecoder().decode(payload);
+        const data = JSON.parse(str);
+        
+        if (data.type === "reaction") {
+          window.dispatchEvent(new CustomEvent("remote-reaction", { 
+            detail: { emoji: data.emoji, identity: participant.identity } 
+          }));
+        }
+      } catch (e) {
+        console.error("Error parsing room data:", e);
+      }
+    };
+
+    room.on(RoomEvent.DataReceived, handleData);
+    return () => {
+      room.off(RoomEvent.DataReceived, handleData);
+    };
+  }, [room]);
+
+  return null;
+}
+
 // ─── Control Dock ─────────────────────────────────────────────────────────────
 function CustomControlDock({
   isRecording,
@@ -132,7 +163,9 @@ function CustomControlDock({
     const encoder = new TextEncoder();
     const data = encoder.encode(JSON.stringify({ type: "reaction", emoji }));
     await room.localParticipant.publishData(data, { reliable: true });
-    window.dispatchEvent(new CustomEvent("local-reaction", { detail: { emoji } }));
+    window.dispatchEvent(new CustomEvent("remote-reaction", { 
+      detail: { emoji, identity: room.localParticipant.identity } 
+    }));
   };
 
   return (
@@ -265,7 +298,7 @@ function CustomControlDock({
           "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           interactionsOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
         )}>
-          <HelpCircle className="w-5 h-5" />
+          <HelpCircle className="w-4 h-4 md:w-5 md:h-5" />
         </Button>
       </div>
     </div>
@@ -412,6 +445,8 @@ export default function RoomPage() {
         connect={true}
         className="flex-1 flex flex-col min-h-0"
       >
+        <RoomEventsListener />
+        
         {/* Main Interaction Area */}
         <div className="flex-1 flex overflow-hidden relative">
           <div className="flex-1 flex flex-col min-w-0">
@@ -441,32 +476,88 @@ export default function RoomPage() {
         </div>
 
         {/* Control Footer */}
-        <CustomControlDock
-          isRecording={isRecording}
-          onStartRecording={() => setIsRecording(true)}
-          onStopRecording={() => setIsRecording(false)}
-          setInviteOpen={setInviteOpen}
-          setParticipantsSidebarOpen={setParticipantsSidebarOpen}
-          participantsSidebarOpen={participantsSidebarOpen}
-          chatOpen={chatOpen}
-          setChatOpen={setChatOpen}
-          isHandRaised={isHandRaised}
-          toggleHand={() => setIsHandRaised(!isHandRaised)}
-          layout={layout}
-          setLayout={setLayout}
-          showCaptions={showCaptions}
-          setShowCaptions={setShowCaptions}
-          interactionsOpen={interactionsOpen}
-          setInteractionsOpen={setInteractionsOpen}
-          isBlurred={isBlurred}
-          setIsBlurred={setIsBlurred}
-          isAdmin={isAdmin}
-          unreadChat={unreadChat}
-        />
+        <div className="relative">
+          <RoomContextWrapper 
+            isAdmin={isAdmin}
+            isRecording={isRecording}
+            setIsRecording={setIsRecording}
+            setInviteOpen={setInviteOpen}
+            participantsSidebarOpen={participantsSidebarOpen}
+            setParticipantsSidebarOpen={setParticipantsSidebarOpen}
+            chatOpen={chatOpen}
+            setChatOpen={setChatOpen}
+            interactionsOpen={interactionsOpen}
+            setInteractionsOpen={setInteractionsOpen}
+            unreadChat={unreadChat}
+            isHandRaised={isHandRaised}
+            setIsHandRaised={setIsHandRaised}
+            layout={layout}
+            setLayout={setLayout}
+          />
+        </div>
 
         <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} roomId={roomId} />
         <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
+  );
+}
+
+// ─── Room Context Wrapper ──────────────────────────────────────────────────────
+function RoomContextWrapper({ 
+  isAdmin, 
+  isRecording, 
+  setIsRecording, 
+  setInviteOpen,
+  participantsSidebarOpen,
+  setParticipantsSidebarOpen,
+  chatOpen,
+  setChatOpen,
+  interactionsOpen,
+  setInteractionsOpen,
+  unreadChat,
+  isHandRaised,
+  setIsHandRaised,
+  layout,
+  setLayout
+}: any) {
+  const room = useRoomContext();
+  
+  const handleToggleHand = async () => {
+    if (!room) return;
+    const newState = !isHandRaised;
+    setIsHandRaised(newState);
+    
+    // Sync to LiveKit server metadata
+    await room.localParticipant.setMetadata(JSON.stringify({ handRaised: newState }));
+    
+    if (newState) {
+      toast.success("Hand raised");
+    }
+  };
+
+  return (
+    <CustomControlDock
+      isRecording={isRecording}
+      onStartRecording={() => setIsRecording(true)}
+      onStopRecording={() => setIsRecording(false)}
+      setInviteOpen={setInviteOpen}
+      setParticipantsSidebarOpen={setParticipantsSidebarOpen}
+      participantsSidebarOpen={participantsSidebarOpen}
+      chatOpen={chatOpen}
+      setChatOpen={setChatOpen}
+      isHandRaised={isHandRaised}
+      toggleHand={handleToggleHand}
+      layout={layout}
+      setLayout={setLayout}
+      showCaptions={false}
+      setShowCaptions={() => {}}
+      interactionsOpen={interactionsOpen}
+      setInteractionsOpen={setInteractionsOpen}
+      isBlurred={false}
+      setIsBlurred={() => {}}
+      isAdmin={isAdmin}
+      unreadChat={unreadChat}
+    />
   );
 }
