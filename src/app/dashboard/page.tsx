@@ -67,10 +67,8 @@ export default function DashboardPage() {
 
     const fetchReplays = async () => {
       try {
-        console.log("[Dashboard] Fetching replays...");
         const replaysQ = query(collection(db, "replays"), orderBy("date", "desc"), limit(2));
         const snapshot = await getDocs(replaysQ);
-        console.log(`[Dashboard] Found ${snapshot.size} replays`);
         setRecentReplays(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       } catch (error) {
         console.error("[Dashboard] Error fetching replays:", error);
@@ -97,28 +95,28 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="flex min-h-screen bg-luxe-gradient overflow-hidden">
+    <div className="flex min-h-screen bg-luxe-gradient overflow-x-hidden">
       <DashboardSidebar />
       
-      <main className="flex-1 ml-72 p-12 overflow-y-auto">
-        <div className="max-w-6xl mx-auto space-y-16">
+      <main className="flex-1 lg:ml-72 p-6 md:p-12 overflow-y-auto">
+        <div className="max-w-6xl mx-auto space-y-12 md:space-y-16 mt-16 lg:mt-0">
           {/* Header Section */}
-          <div className="flex items-end justify-between">
-            <div className="space-y-2">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-4 md:space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                 <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Academy Live</span>
               </div>
-              <h1 className="text-5xl font-heading font-bold text-white tracking-tight">
+              <h1 className="text-4xl md:text-5xl font-heading font-bold text-white tracking-tight leading-tight">
                 Welcome back, <span className="text-primary">{user?.displayName?.split(" ")[0] || "Leader"}</span>
               </h1>
-              <p className="text-muted-foreground text-lg max-w-xl font-medium opacity-80">
+              <p className="text-muted-foreground text-base md:text-lg max-w-xl font-medium opacity-80">
                 Your next leadership session is scheduled for today. Ready to transform?
               </p>
             </div>
             {isAdmin && (
               <Link href="/dashboard/create">
-                <Button variant="luxe" className="rounded-2xl h-14 px-8 text-base font-bold shadow-2xl shadow-primary/20">
+                <Button variant="luxe" className="w-full md:w-auto rounded-2xl h-14 px-8 text-base font-bold shadow-2xl shadow-primary/20">
                   <Plus className="w-5 h-5 mr-3" />
                   New Session
                 </Button>
@@ -127,24 +125,24 @@ export default function DashboardPage() {
           </div>
 
           {/* Quick Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {[
               { icon: Video, label: "Upcoming Sessions", value: "12", color: "primary" },
               { icon: Users, label: "Active Cohorts", value: activeCohortsCount.toString(), color: "indigo" },
               { icon: Clock, label: "Learning Hours", value: "84h", color: "amber" },
             ].map((stat, idx) => (
               <Card key={idx} className="relative group overflow-hidden border-white/5 hover:border-white/10">
-                <div className="p-8 flex items-center gap-6 relative z-10">
+                <div className="p-6 md:p-8 flex items-center gap-6 relative z-10">
                   <div className={cn(
-                    "w-16 h-16 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110",
+                    "w-14 h-14 md:w-16 md:h-16 rounded-2xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110",
                     stat.color === "primary" ? "bg-primary/10 text-primary" :
                     stat.color === "indigo" ? "bg-indigo-500/10 text-indigo-400" :
                     "bg-amber-500/10 text-amber-400"
                   )}>
-                    <stat.icon className="w-8 h-8" />
+                    <stat.icon className="w-7 h-7 md:w-8 md:h-8" />
                   </div>
                   <div>
-                    <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+                    <div className="text-2xl md:text-3xl font-bold text-white mb-1">{stat.value}</div>
                     <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">{stat.label}</div>
                   </div>
                 </div>
@@ -158,11 +156,11 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 lg:gap-16">
             {/* Main Content: Sessions */}
             <div className="lg:col-span-2 space-y-8">
               <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-heading font-bold text-white tracking-tight">Active Sessions</h2>
+                <h2 className="text-2xl md:text-3xl font-heading font-bold text-white tracking-tight">Active Sessions</h2>
                 <Link href="/dashboard/sessions" className="group flex items-center gap-2 text-sm font-bold text-primary">
                   Explore All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -179,25 +177,25 @@ export default function DashboardPage() {
                   sessions.map((session) => (
                     <motion.div key={session.id} whileHover={{ y: -4 }}>
                       <Card className="hover:bg-white/[0.05] border-white/5 hover:border-primary/20 transition-all duration-500">
-                        <div className="p-8 flex items-center gap-8">
-                          <div className="w-28 h-28 rounded-[2rem] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20 relative group overflow-hidden">
-                            <Video className="w-10 h-10 text-primary relative z-10" />
+                        <div className="p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-6 md:gap-8">
+                          <div className="w-20 h-20 md:w-28 md:h-28 rounded-[1.5rem] md:rounded-[2rem] bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20 relative group overflow-hidden shrink-0">
+                            <Video className="w-8 h-8 md:w-10 md:h-10 text-primary relative z-10" />
                             <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                           </div>
                           
-                          <div className="flex-1 space-y-3">
-                            <div className="flex items-center gap-3">
-                              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                          <div className="flex-1 space-y-3 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                              <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest">
                                 {session.cohort}
                               </Badge>
                               {session.status === "live" && (
-                                <Badge className="bg-green-500 text-white border-none px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                                <Badge className="bg-green-500 text-white border-none px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-widest animate-pulse">
                                   Live Now
                                 </Badge>
                               )}
                             </div>
-                            <h3 className="text-2xl font-bold text-white tracking-tight leading-tight">{session.title}</h3>
-                            <div className="flex items-center gap-6 text-muted-foreground font-medium opacity-70">
+                            <h3 className="text-xl md:text-2xl font-bold text-white tracking-tight leading-tight truncate">{session.title}</h3>
+                            <div className="flex flex-wrap items-center gap-4 md:gap-6 text-muted-foreground font-medium opacity-70 text-sm">
                               <span className="flex items-center gap-2">
                                 <Users className="w-4 h-4 text-primary" />
                                 {session.instructor}
@@ -209,8 +207,8 @@ export default function DashboardPage() {
                             </div>
                           </div>
 
-                          <Link href={`/room/${session.id}`}>
-                            <Button className="rounded-2xl h-14 px-8 bg-white/5 hover:bg-primary text-white font-bold border border-white/10 hover:border-primary transition-all group">
+                          <Link href={`/room/${session.id}`} className="w-full md:w-auto">
+                            <Button className="w-full md:w-auto rounded-2xl h-14 px-8 bg-white/5 hover:bg-primary text-white font-bold border border-white/10 hover:border-primary transition-all group">
                               Join Room
                               <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                             </Button>

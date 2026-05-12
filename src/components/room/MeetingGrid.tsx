@@ -4,10 +4,40 @@ import { useState, useEffect } from "react";
 import { ParticipantTile, useTracks } from "@livekit/components-react";
 import { Track } from "livekit-client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Hand, ChevronLeft, ChevronRight } from "lucide-react";
+import { Hand, ChevronLeft, ChevronRight, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const MAX_PER_PAGE = 8;
+
+// Premium color palette for tile placeholders
+const TILE_COLORS = [
+  "bg-emerald-500/20 border-emerald-500/50 text-emerald-400",
+  "bg-indigo-500/20 border-indigo-500/50 text-indigo-400",
+  "bg-rose-500/20 border-rose-500/50 text-rose-400",
+  "bg-amber-500/20 border-amber-500/50 text-amber-400",
+  "bg-cyan-500/20 border-cyan-500/50 text-cyan-400",
+  "bg-fuchsia-500/20 border-fuchsia-500/50 text-fuchsia-400",
+  "bg-violet-500/20 border-violet-500/50 text-violet-400",
+  "bg-orange-500/20 border-orange-500/50 text-orange-400",
+];
+
+function getParticipantColor(identity: string) {
+  let hash = 0;
+  for (let i = 0; i < identity.length; i++) {
+    hash = identity.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return TILE_COLORS[Math.abs(hash) % TILE_COLORS.length];
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 function getGridCols(count: number) {
   if (count === 1) return "grid-cols-1";
@@ -41,7 +71,7 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
               trackRef={spotlightTrack}
               className="w-full h-full [&>video]:object-cover [&_.lk-participant-metadata]:hidden"
             />
-            <ParticipantOverlay participant={spotlightTrack.participant} />
+            <ParticipantOverlay participant={spotlightTrack.participant} isCameraOn={!!(spotlightTrack.publication?.isSubscribed && !spotlightTrack.publication?.isMuted)} />
           </div>
         )}
       </div>
@@ -50,35 +80,41 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
 
   return (
     <div className="w-full h-full relative flex flex-col overflow-hidden">
-      {/* Grid - fills all available space, rows stretch equally */}
       <div
         className={`flex-1 min-h-0 grid auto-rows-fr gap-1.5 md:gap-2 p-1.5 md:p-3 ${getGridCols(currentTracks.length)}`}
       >
         <AnimatePresence mode="popLayout">
-          {currentTracks.map((trackRef, idx) => (
-            <motion.div
-              key={`${trackRef.participant.sid}-${trackRef.source}`}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3, delay: idx * 0.03 }}
-              className="relative min-h-0 rounded-xl md:rounded-2xl overflow-hidden border border-white/5 shadow-xl bg-zinc-900 group/tile"
-            >
-              {/* Hide LiveKit's built-in name overlay — we render our own */}
-              <ParticipantTile
-                trackRef={trackRef}
-                className="absolute inset-0 w-full h-full [&>video]:object-cover [&_.lk-participant-metadata]:!hidden"
-              />
-              <ParticipantOverlay participant={trackRef.participant} />
-              {trackRef.participant.isSpeaking && (
-                <div className="absolute inset-0 border-2 border-primary/50 rounded-xl md:rounded-2xl pointer-events-none" />
-              )}
-            </motion.div>
-          ))}
+          {currentTracks.map((trackRef, idx) => {
+            const isCameraOn = !!(trackRef.source === Track.Source.Camera && 
+                             trackRef.publication?.isSubscribed && 
+                             !trackRef.publication?.isMuted);
+            
+            return (
+              <motion.div
+                key={`${trackRef.participant.sid}-${trackRef.source}`}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.3, delay: idx * 0.03 }}
+                className="relative min-h-0 rounded-xl md:rounded-2xl overflow-hidden border border-white/5 shadow-xl bg-zinc-900 group/tile"
+              >
+                <ParticipantTile
+                  trackRef={trackRef}
+                  className="absolute inset-0 w-full h-full [&>video]:object-cover [&_.lk-participant-metadata]:!hidden"
+                />
+                <ParticipantOverlay 
+                  participant={trackRef.participant} 
+                  isCameraOn={isCameraOn} 
+                />
+                {trackRef.participant.isSpeaking && (
+                  <div className="absolute inset-0 border-2 border-primary/50 rounded-xl md:rounded-2xl pointer-events-none z-30" />
+                )}
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 
-      {/* Pagination arrows */}
       {totalPages > 1 && (
         <>
           <Button
@@ -99,17 +135,6 @@ export function MeetingGrid({ layout }: { layout: "tiled" | "spotlight" | "sideb
           >
             <ChevronRight className="w-6 h-6" />
           </Button>
-          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-50">
-            {Array.from({ length: totalPages }).map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setPage(i)}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === page ? "w-6 bg-primary shadow-[0_0_8px_rgba(59,130,246,0.5)]" : "w-1.5 bg-white/30"
-                }`}
-              />
-            ))}
-          </div>
         </>
       )}
     </div>
@@ -135,7 +160,7 @@ function ReactionOverlay({ identity }: { identity: string }) {
   }, [identity]);
 
   return (
-    <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-40">
       <AnimatePresence>
         {reactions.map((r) => (
           <motion.div
@@ -154,17 +179,43 @@ function ReactionOverlay({ identity }: { identity: string }) {
   );
 }
 
-function ParticipantOverlay({ participant }: { participant: any }) {
+function ParticipantOverlay({ participant, isCameraOn }: { participant: any; isCameraOn: boolean }) {
   const metadata = (() => {
     try { return participant.metadata ? JSON.parse(participant.metadata) : {}; }
     catch { return {}; }
   })();
   const isHandRaised = metadata.handRaised;
+  const colorClass = getParticipantColor(participant.identity);
+  const initials = getInitials(participant.name || participant.identity || "User");
 
   return (
-    <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-2 md:p-3">
+    <div className="absolute inset-0 z-20 flex flex-col justify-between p-2 md:p-3 pointer-events-none">
+      {/* Background Placeholder when Camera is Off */}
+      <AnimatePresence>
+        {!isCameraOn && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={cn("absolute inset-0 flex items-center justify-center border transition-all duration-700 bg-zinc-950", colorClass)}
+          >
+            <div className="relative">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center text-3xl md:text-4xl font-bold tracking-tighter bg-white/5 backdrop-blur-sm border border-white/10 shadow-2xl relative z-10">
+                {initials}
+              </div>
+              {/* Animated aura */}
+              <motion.div 
+                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.1, 0.3] }}
+                transition={{ duration: 4, repeat: Infinity }}
+                className="absolute inset-0 bg-current rounded-full blur-3xl opacity-20" 
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Top section: Hand raise & Reactions */}
-      <div className="flex justify-between items-start w-full relative h-full">
+      <div className="flex justify-between items-start w-full h-full relative">
         <div className="flex justify-start">
           <AnimatePresence>
             {isHandRaised && (
@@ -180,7 +231,6 @@ function ParticipantOverlay({ participant }: { participant: any }) {
           </AnimatePresence>
         </div>
         
-        {/* Reaction Layer */}
         <ReactionOverlay identity={participant.identity} />
       </div>
 
