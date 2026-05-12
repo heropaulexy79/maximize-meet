@@ -34,8 +34,9 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (error) {
-      console.error("Error verifying Firebase token:", error);
-      return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
+      console.error("Token verification failed, falling back to guest:", error);
+      // Fallback: don't return 401, just treat as non-admin
+      finalUsername = `(Auth Error) ${username}`;
     }
   } else {
     // Guest user - prefix username to distinguish
