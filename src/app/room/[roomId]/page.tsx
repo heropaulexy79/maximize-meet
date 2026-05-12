@@ -208,28 +208,28 @@ function CustomControlDock({
         </TooltipProvider>
       </div>
 
-      {/* Sidebars Controls - Compact on Mobile */}
-      <div className="hidden md:flex items-center gap-2">
+      {/* Sidebars Controls - Responsive */}
+      <div className="flex items-center gap-1.5 md:gap-2">
         <Button variant="ghost" onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)} className={cn(
-          "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+          "w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           participantsSidebarOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
         )}>
-          <Users className="w-5 h-5" />
+          <Users className="w-4 h-4 md:w-5 md:h-5" />
         </Button>
 
         <Button variant="ghost" onClick={() => setChatOpen(!chatOpen)} className={cn(
-          "relative w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+          "relative w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           chatOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
         )}>
-          <MessageSquare className="w-5 h-5" />
-          {unreadChat > 0 && <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]" />}
+          <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
+          {unreadChat > 0 && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]" />}
         </Button>
 
         <Button variant="ghost" onClick={() => setInteractionsOpen(!interactionsOpen)} className={cn(
-          "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+          "hidden md:flex w-10 h-10 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           interactionsOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
         )}>
-          <HelpCircle className="w-5 h-5" />
+          <HelpCircle className="w-4 h-4 md:w-5 md:h-5" />
         </Button>
       </div>
     </div>
@@ -385,10 +385,10 @@ export default function RoomPage() {
           <AnimatePresence>
             {(participantsSidebarOpen || chatOpen || interactionsOpen) && (
               <motion.div
-                initial={{ opacity: 0, x: 300 }}
+                initial={{ opacity: 0, x: "100%" }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 300 }}
-                className="w-80 md:w-96 bg-zinc-950 border-l border-white/5 h-full z-50 flex flex-col shadow-2xl"
+                exit={{ opacity: 0, x: "100%" }}
+                className="absolute md:relative right-0 top-0 bottom-0 w-full md:w-96 bg-zinc-950 border-l border-white/5 h-full z-[100] flex flex-col shadow-2xl"
               >
                 {participantsSidebarOpen && (
                   <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} roomId={roomId as string} />
