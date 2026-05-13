@@ -34,7 +34,7 @@ interface AttendanceRecord {
 }
 
 export default function AttendancePage() {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
+  const [sessions, setSessions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { user, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -54,11 +54,14 @@ export default function AttendancePage() {
           }
         });
         const data = await res.json();
-        if (data.records) {
-          setRecords(data.records.map((r: any) => ({
-            ...r,
-            joinedAt: r.joinedAt ? new Date(r.joinedAt) : null,
-            leftAt: r.leftAt ? new Date(r.leftAt) : null,
+        if (data.sessions) {
+          setSessions(data.sessions.map((session: any) => ({
+            ...session,
+            records: session.records.map((r: any) => ({
+              ...r,
+              joinedAt: r.joinedAt ? new Date(r.joinedAt) : null,
+              leftAt: r.leftAt ? new Date(r.leftAt) : null,
+            }))
           })));
         } else {
           console.error("Attendance API error:", data.error);
@@ -72,8 +75,6 @@ export default function AttendancePage() {
 
     if (isAdmin && user) {
       fetchAttendance();
-      // Poll every 10 seconds for updates instead of real-time subscription
-      // to avoid client-side permission issues and keep it simple
       const interval = setInterval(fetchAttendance, 10000);
       return () => clearInterval(interval);
     }
@@ -99,93 +100,109 @@ export default function AttendancePage() {
               Session Attendance
             </h1>
             <p className="text-muted-foreground text-lg">
-              Track who attended your leadership sessions and for how long.
+              Track participation across all your academy sessions.
             </p>
           </div>
 
-          <Card className="bg-white/[0.02] border-white/5 rounded-[2rem] overflow-hidden">
-            <CardHeader className="border-b border-white/5 bg-white/[0.01]">
-              <CardTitle className="text-xl font-outfit flex items-center gap-3">
-                <Users className="w-6 h-6 text-primary" />
-                Attendance Log
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {loading ? (
-                <div className="p-10 text-center">
-                  <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                  <p className="text-muted-foreground">Loading attendance records...</p>
-                </div>
-              ) : records.length === 0 ? (
-                <div className="p-10 text-center">
-                  <Video className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <p className="text-white font-medium mb-1">No attendance records found</p>
-                  <p className="text-sm text-muted-foreground">Records will appear here automatically when participants join a room.</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-white/5 text-sm text-muted-foreground uppercase tracking-wider">
-                        <th className="p-6 font-medium">Participant</th>
-                        <th className="p-6 font-medium">Room / Session</th>
-                        <th className="p-6 font-medium">Joined At</th>
-                        <th className="p-6 font-medium">Left At</th>
-                        <th className="p-6 font-medium">Duration</th>
-                        <th className="p-6 font-medium text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-white/5">
-                      {records.map((record) => (
-                        <tr key={record.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="p-6">
-                            <div className="font-medium text-white">{record.name}</div>
-                            <div className="text-xs text-muted-foreground mt-0.5">{record.identity}</div>
-                          </td>
-                          <td className="p-6 text-sm text-muted-foreground font-mono">
-                            {record.roomId}
-                          </td>
-                          <td className="p-6 text-sm text-muted-foreground">
-                            {record.joinedAt ? (
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-3.5 h-3.5" />
-                                {format(record.joinedAt, "MMM d, h:mm a")}
-                              </div>
-                            ) : "—"}
-                          </td>
-                          <td className="p-6 text-sm text-muted-foreground">
-                            {record.leftAt ? (
-                              <div className="flex items-center gap-2">
-                                <LogOut className="w-3.5 h-3.5" />
-                                {format(record.leftAt, "h:mm a")}
-                              </div>
-                            ) : "—"}
-                          </td>
-                          <td className="p-6 text-sm font-medium text-white">
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-3.5 h-3.5 text-primary" />
-                              {formatDuration(record.durationSeconds)}
-                            </div>
-                          </td>
-                          <td className="p-6 text-right">
-                            {!record.leftAt ? (
-                              <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
-                                In Room
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-muted-foreground border-white/10">
-                                Completed
-                              </Badge>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {loading ? (
+            <div className="py-20 text-center">
+              <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading attendance sessions...</p>
+            </div>
+          ) : sessions.length === 0 ? (
+            <div className="py-20 text-center bg-white/[0.02] border border-white/5 rounded-[2.5rem]">
+              <Video className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
+              <p className="text-white font-medium mb-1">No attendance records found</p>
+              <p className="text-sm text-muted-foreground">Records will appear here automatically when participants join a room.</p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {sessions.map((session) => (
+                <Card key={session.roomId} className="bg-white/[0.02] border-white/5 rounded-[2.5rem] overflow-hidden">
+                  <CardHeader className="p-8 border-b border-white/5 bg-white/[0.01]">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                          <Video className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-2xl font-outfit text-white">
+                            {session.title}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground font-mono mt-1">
+                            Room ID: {session.roomId}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 px-4 py-1.5 rounded-full text-sm">
+                          {session.records.length} Participants
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-white/5 text-sm text-muted-foreground uppercase tracking-wider">
+                            <th className="p-6 font-medium">Participant</th>
+                            <th className="p-6 font-medium">Joined At</th>
+                            <th className="p-6 font-medium">Left At</th>
+                            <th className="p-6 font-medium">Duration</th>
+                            <th className="p-6 font-medium text-right">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                          {session.records.map((record: any) => (
+                            <tr key={record.id} className="hover:bg-white/[0.02] transition-colors">
+                              <td className="p-6">
+                                <div className="font-medium text-white">{record.name}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">{record.identity}</div>
+                              </td>
+                              <td className="p-6 text-sm text-muted-foreground">
+                                {record.joinedAt ? (
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    {format(record.joinedAt, "MMM d, h:mm a")}
+                                  </div>
+                                ) : "—"}
+                              </td>
+                              <td className="p-6 text-sm text-muted-foreground">
+                                {record.leftAt ? (
+                                  <div className="flex items-center gap-2">
+                                    <LogOut className="w-3.5 h-3.5" />
+                                    {format(record.leftAt, "h:mm a")}
+                                  </div>
+                                ) : "—"}
+                              </td>
+                              <td className="p-6 text-sm font-medium text-white">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-3.5 h-3.5 text-primary" />
+                                  {formatDuration(record.durationSeconds)}
+                                </div>
+                              </td>
+                              <td className="p-6 text-right">
+                                {!record.leftAt ? (
+                                  <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
+                                    In Room
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-muted-foreground border-white/10">
+                                    Completed
+                                  </Badge>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

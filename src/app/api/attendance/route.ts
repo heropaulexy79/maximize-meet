@@ -17,26 +17,44 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
     }
 
-    const snapshot = await adminDb
-      .collection("attendance")
-      .orderBy("joinedAt", "desc")
-      .limit(100)
-      .get();
+    const [attendanceSnapshot, sessionsSnapshot] = await Promise.all([
+      adminDb.collection("attendance").orderBy("joinedAt", "desc").get(),
+      adminDb.collection("sessions").get()
+    ]);
 
-    const records = snapshot.docs.map(doc => {
+    const sessionMap = new Map();
+    sessionsSnapshot.docs.forEach(doc => {
       const data = doc.data();
-      return {
+      if (data.roomId) sessionMap.set(data.roomId, data.title);
+    });
+
+    const grouped: Record<string, any> = {};
+
+    attendanceSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const roomId = data.roomId || "Unknown Room";
+      
+      if (!grouped[roomId]) {
+        grouped[roomId] = {
+          roomId,
+          title: sessionMap.get(roomId) || "Unnamed Session",
+          records: []
+        };
+      }
+
+      grouped[roomId].records.push({
         id: doc.id,
         identity: data.identity,
         name: data.name,
-        roomId: data.roomId || "Unknown Room",
         joinedAt: data.joinedAt ? data.joinedAt.toDate().toISOString() : null,
         leftAt: data.leftAt ? data.leftAt.toDate().toISOString() : null,
         durationSeconds: data.durationSeconds || 0,
-      };
+      });
     });
 
-    return NextResponse.json({ records });
+    const sessions = Object.values(grouped);
+
+    return NextResponse.json({ sessions });
   } catch (error: any) {
     console.error("Attendance API error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
