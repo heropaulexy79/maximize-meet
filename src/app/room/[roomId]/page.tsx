@@ -509,14 +509,6 @@ export default function RoomPage() {
   const router = useRouter();
   const { roomId } = useParams();
   const { user, isAdmin: firebaseAdmin, loading: authLoading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const { localParticipant } = useLocalParticipant();
-
-  // Combine Firebase admin status and LiveKit metadata admin status
-  useEffect(() => {
-    const meta = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
-    setIsAdmin(firebaseAdmin || meta.role === "admin");
-  }, [firebaseAdmin, localParticipant.metadata]);
   const [token, setToken] = useState("");
   const [guestName, setGuestName] = useState("");
   const [showNameEntry, setShowNameEntry] = useState(false);
@@ -640,90 +632,137 @@ export default function RoomPage() {
           router.push(user ? "/dashboard" : "/login");
         }}
       >
-        <RecordingIndicator isRecording={isRecording} />
-        <RoomEventsListener onRecordingChange={setIsRecording} />
-        
-        {/* Main Interaction Area */}
-        <div className="flex-1 flex overflow-hidden relative">
-          <div className="flex-1 flex flex-col min-w-0">
-            <MeetingGrid layout={layout} />
-          </div>
-
-          {/* Persistent Sidebar Container */}
-          <div className={cn(
-            "fixed md:relative right-0 top-0 bottom-0 w-full md:w-96 bg-zinc-950 border-l border-white/5 h-full z-[100] flex flex-col shadow-2xl transition-transform duration-300 ease-in-out",
-            (participantsSidebarOpen || chatOpen || interactionsOpen) ? "translate-x-0" : "translate-x-full md:hidden"
-          )}>
-            <div className={cn("h-full", !participantsSidebarOpen && "hidden")}>
-              <ParticipantsSidebar 
-                onClose={() => setParticipantsSidebarOpen(false)} 
-                roomId={roomId as string} 
-                isAdmin={isAdmin}
-              />
-            </div>
-            
-            <div className={cn("h-full", !chatOpen && "hidden")}>
-              <ChatSidebarWrapper 
-                onNewMessage={(msg) => {
-                  if (!chatOpen) {
-                    setUnreadChat(prev => prev + 1);
-                    setLastMessage(msg);
-                    setTimeout(() => setLastMessage(null), 5000);
-                  }
-                }}
-                onClose={() => setChatOpen(false)} 
-              />
-            </div>
-            
-            <div className={cn("h-full", !interactionsOpen && "hidden")}>
-              <InteractionsSidebar onClose={() => setInteractionsOpen(false)} />
-            </div>
-          </div>
-        </div>
-
-        {/* Control Footer */}
-        <div className="relative">
-          <RoomContextWrapper 
-            user={user}
-            roomId={roomId}
-            meetingTitle={meetingTitle}
-            isAdmin={isAdmin}
-            isRecording={isRecording}
-            onToggleRecording={(rec: boolean) => setIsRecording(rec)}
-            setInviteOpen={setInviteOpen}
-            setLeaveOpen={setLeaveOpen}
-            participantsSidebarOpen={participantsSidebarOpen}
-            setParticipantsSidebarOpen={setParticipantsSidebarOpen}
-            chatOpen={chatOpen}
-            setChatOpen={setChatOpen}
-            interactionsOpen={interactionsOpen}
-            setInteractionsOpen={setInteractionsOpen}
-            unreadChat={unreadChat}
-            isHandRaised={isHandRaised}
-            setIsHandRaised={setIsHandRaised}
-            layout={layout}
-            setLayout={setLayout}
-            lastMessage={lastMessage}
-          />
-        </div>
-
-        <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} roomId={roomId} />
-        
-        <LeaveMeetingDialog 
-          open={leaveOpen} 
-          onOpenChange={setLeaveOpen}
-          onLeave={() => router.push(user ? "/dashboard" : "/login")}
-          onEndForAll={handleEndForAll}
-          isAdmin={isAdmin}
+        <RoomContent 
+          user={user}
+          roomId={roomId as string}
+          firebaseAdmin={firebaseAdmin}
+          isRecording={isRecording}
+          setIsRecording={setIsRecording}
+          meetingTitle={meetingTitle}
+          layout={layout}
+          setLayout={setLayout}
+          chatOpen={chatOpen}
+          setChatOpen={setChatOpen}
+          participantsSidebarOpen={participantsSidebarOpen}
+          setParticipantsSidebarOpen={setParticipantsSidebarOpen}
+          interactionsOpen={interactionsOpen}
+          setInteractionsOpen={setInteractionsOpen}
+          unreadChat={unreadChat}
+          setUnreadChat={setUnreadChat}
+          lastMessage={lastMessage}
+          setLastMessage={setLastMessage}
+          isHandRaised={isHandRaised}
+          setIsHandRaised={setIsHandRaised}
+          inviteOpen={inviteOpen}
+          setInviteOpen={setInviteOpen}
+          leaveOpen={leaveOpen}
+          setLeaveOpen={setLeaveOpen}
+          handleEndForAll={handleEndForAll}
         />
-
-        <RoomAudioRenderer />
       </LiveKitRoom>
     </div>
   );
 }
 
-// ─── Chat Sidebar Wrapper ──────────────────────────────────────────────────────
+// ─── Room Content Component (Inside LiveKit Context) ──────────────────────────
+function RoomContent({ 
+  user, roomId, firebaseAdmin, isRecording, setIsRecording, meetingTitle,
+  layout, setLayout, chatOpen, setChatOpen, participantsSidebarOpen, setParticipantsSidebarOpen,
+  interactionsOpen, setInteractionsOpen, unreadChat, setUnreadChat, lastMessage, setLastMessage,
+  isHandRaised, setIsHandRaised, inviteOpen, setInviteOpen, leaveOpen, setLeaveOpen, handleEndForAll
+}: any) {
+  const { localParticipant } = useLocalParticipant();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const meta = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
+    setIsAdmin(firebaseAdmin || meta.role === "admin");
+  }, [firebaseAdmin, localParticipant.metadata]);
+
+  return (
+    <>
+      <RecordingIndicator isRecording={isRecording} />
+      <RoomEventsListener onRecordingChange={setIsRecording} />
+      
+      {/* Main Interaction Area */}
+      <div className="flex-1 flex overflow-hidden relative">
+        <div className="flex-1 flex flex-col min-w-0">
+          <MeetingGrid layout={layout} />
+        </div>
+
+        {/* Persistent Sidebar Container */}
+        <div className={cn(
+          "fixed md:relative right-0 top-0 bottom-0 w-full md:w-96 bg-zinc-950 border-l border-white/5 h-full z-[100] flex flex-col shadow-2xl transition-transform duration-300 ease-in-out",
+          (participantsSidebarOpen || chatOpen || interactionsOpen) ? "translate-x-0" : "translate-x-full md:hidden"
+        )}>
+          <div className={cn("h-full", !participantsSidebarOpen && "hidden")}>
+            <ParticipantsSidebar 
+              onClose={() => setParticipantsSidebarOpen(false)} 
+              roomId={roomId} 
+              isAdmin={isAdmin}
+            />
+          </div>
+          
+          <div className={cn("h-full", !chatOpen && "hidden")}>
+            <ChatSidebarWrapper 
+              onNewMessage={(msg) => {
+                if (!chatOpen) {
+                  setUnreadChat((prev: number) => prev + 1);
+                  setLastMessage(msg);
+                  setTimeout(() => setLastMessage(null), 5000);
+                }
+              }}
+              onClose={() => setChatOpen(false)} 
+            />
+          </div>
+          
+          <div className={cn("h-full", !interactionsOpen && "hidden")}>
+            <InteractionsSidebar onClose={() => setInteractionsOpen(false)} />
+          </div>
+        </div>
+      </div>
+
+      {/* Control Footer */}
+      <div className="relative">
+        <RoomContextWrapper 
+          user={user}
+          roomId={roomId}
+          meetingTitle={meetingTitle}
+          isAdmin={isAdmin}
+          isRecording={isRecording}
+          onToggleRecording={(rec: boolean) => setIsRecording(rec)}
+          setInviteOpen={setInviteOpen}
+          setLeaveOpen={setLeaveOpen}
+          participantsSidebarOpen={participantsSidebarOpen}
+          setParticipantsSidebarOpen={setParticipantsSidebarOpen}
+          chatOpen={chatOpen}
+          setChatOpen={setChatOpen}
+          interactionsOpen={interactionsOpen}
+          setInteractionsOpen={setInteractionsOpen}
+          unreadChat={unreadChat}
+          isHandRaised={isHandRaised}
+          setIsHandRaised={setIsHandRaised}
+          layout={layout}
+          setLayout={setLayout}
+          lastMessage={lastMessage}
+        />
+      </div>
+
+      <InviteDialog open={inviteOpen} onClose={() => setInviteOpen(false)} roomId={roomId} />
+      
+      <LeaveMeetingDialog 
+        open={leaveOpen} 
+        onOpenChange={setLeaveOpen}
+        onLeave={() => router.push(user ? "/dashboard" : "/login")}
+        onEndForAll={handleEndForAll}
+        isAdmin={isAdmin}
+      />
+
+      <RoomAudioRenderer />
+    </>
+  );
+}
 function ChatSidebarWrapper({ onNewMessage, onClose }: { onNewMessage: (msg: any) => void; onClose: () => void }) {
   const { chatMessages } = useChat();
   const prevCountRef = useRef(0);
