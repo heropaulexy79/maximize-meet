@@ -98,14 +98,14 @@ export function ParticipantsSidebar({ onClose, roomId, isAdmin }: { onClose: () 
                 </div>
 
                 {isAdmin && !isLocal && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 transition-all duration-300">
                     {/* Make Host Button */}
-                    {!metadata.role && (
+                    {metadata.role !== "admin" && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="w-9 h-9 rounded-xl text-primary/60 hover:text-primary hover:bg-primary/10"
-                        title="Make Host"
+                        className="w-9 h-9 rounded-xl text-primary/60 hover:text-primary hover:bg-primary/10 border border-transparent hover:border-primary/20"
+                        title="Transfer Host"
                         onClick={() => handleAdminAction("updateParticipant", p.identity, undefined, JSON.stringify({ ...metadata, role: "admin" }))}
                       >
                         <ShieldAlert className="w-4 h-4" />

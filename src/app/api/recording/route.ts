@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error("Recording error:", error);
     return NextResponse.json(
-      { error: error.message || "Recording failed" },
+      { error: error.message || "Recording failed" },   
       { status: 500 }
     );
   }
