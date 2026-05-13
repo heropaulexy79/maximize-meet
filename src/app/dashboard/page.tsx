@@ -45,46 +45,62 @@ export default function DashboardPage() {
 
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [activeCohortsCount, setActiveCohortsCount] = useState(0);
+  const [learningHours, setLearningHours] = useState(0);
   const [recentReplays, setRecentReplays] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchSessions = async () => {
+    const fetchDashboardData = async () => {
       try {
-        const res = await fetch("/api/sessions");
-        const data = await res.json();
-        if (data.sessions) {
-          setSessions(data.sessions.slice(0, 4));
+        const idToken = await user?.getIdToken();
+        
+        // 1. Fetch Sessions
+        const sRes = await fetch("/api/sessions");
+        const sData = await sRes.json();
+        if (sData.sessions) {
+          setSessions(sData.sessions.slice(0, 4));
         }
+
+        // 2. Fetch Attendance for Learning Hours
+        const aRes = await fetch("/api/attendance", {
+          headers: { "Authorization": `Bearer ${idToken}` }
+        });
+        const aData = await aRes.json();
+        if (aData.sessions) {
+          let totalSeconds = 0;
+          aData.sessions.forEach((s: any) => {
+            s.records.forEach((r: any) => {
+              // If admin, count all. If member, count only their own
+              if (isAdmin || r.identity === user?.uid) {
+                totalSeconds += r.durationSeconds;
+              }
+            });
+          });
+          setLearningHours(Math.round(totalSeconds / 3600));
+        }
+
+        // 3. Fetch Replays
+        const replaysQ = query(collection(db, "replays"), orderBy("date", "desc"), limit(2));
+        const snapshot = await getDocs(replaysQ);
+        setRecentReplays(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+        // 4. Cohorts (Fallback if collection missing)
+        try {
+          const cohortsSnapshot = await getDocs(collection(db, "cohorts"));
+          setActiveCohortsCount(cohortsSnapshot.size);
+        } catch (e) {
+          console.warn("Cohorts collection might not exist yet");
+        }
+
       } catch (error) {
-        console.error("Error fetching sessions:", error);
+        console.error("Dashboard data fetch error:", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSessions();
-
-    const fetchReplays = async () => {
-      try {
-        const replaysQ = query(collection(db, "replays"), orderBy("date", "desc"), limit(2));
-        const snapshot = await getDocs(replaysQ);
-        setRecentReplays(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        console.error("[Dashboard] Error fetching replays:", error);
-      }
-    };
-    fetchReplays();
-
-    const cohortsQ = query(collection(db, "cohorts"));
-    const unsubCohorts = onSnapshot(cohortsQ, (snapshot) => {
-      setActiveCohortsCount(snapshot.size);
-    });
-
-    return () => {
-      unsubCohorts();
-    };
-  }, []);
+    if (user) fetchDashboardData();
+  }, [user, isAdmin]);
 
   const formatDuration = (seconds: number) => {
     if (!seconds) return "0m";
@@ -127,9 +143,9 @@ export default function DashboardPage() {
           {/* Quick Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {[
-              { icon: Video, label: "Upcoming Sessions", value: "12", color: "primary" },
+              { icon: Video, label: "Total Sessions", value: sessions.length.toString(), color: "primary" },
               { icon: Users, label: "Active Cohorts", value: activeCohortsCount.toString(), color: "indigo" },
-              { icon: Clock, label: "Learning Hours", value: "84h", color: "amber" },
+              { icon: Clock, label: "Learning Hours", value: `${learningHours}h`, color: "amber" },
             ].map((stat, idx) => (
               <Card key={idx} className="relative group overflow-hidden border-white/5 hover:border-white/10">
                 <div className="p-6 md:p-8 flex items-center gap-6 relative z-10">

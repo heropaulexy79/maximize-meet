@@ -629,7 +629,7 @@ export default function RoomPage() {
         className="flex-1 flex flex-col min-h-0"
         onDisconnected={() => {
           toast.info("Disconnected from meeting.");
-          router.push("/dashboard");
+          router.push(user ? "/dashboard" : "/login");
         }}
       >
         <RecordingIndicator isRecording={isRecording} />
@@ -700,7 +700,7 @@ export default function RoomPage() {
         <LeaveMeetingDialog 
           open={leaveOpen} 
           onOpenChange={setLeaveOpen}
-          onLeave={() => router.push("/dashboard")}
+          onLeave={() => router.push(user ? "/dashboard" : "/login")}
           onEndForAll={handleEndForAll}
           isAdmin={isAdmin}
         />
