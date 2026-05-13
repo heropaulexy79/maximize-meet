@@ -59,27 +59,28 @@ export default function ReplayPlayerPage() {
     if (!url) return "";
     console.log("[Replay] Raw URL from Firestore:", url);
     
-    let sanitized = url;
+    let fileUrl = url;
     
-    // 1. Brute-force: If it contains "https//", extract starting from "https"
-    if (sanitized.includes("https//")) {
-      sanitized = "https://" + sanitized.split("https//")[1];
-    } else if (sanitized.includes("http//")) {
-      sanitized = "http://" + sanitized.split("http//")[1];
+    // LiveKit builds URL as {bucket}.{endpoint}/{path}
+    // When endpoint has https://, result is: "bucket.https://domain/path"
+    // or after Firestore: "https://bucket.https://domain/path"
+    const nestedProtoMatch = fileUrl.match(/^(?:https?:\/\/)?[^/]+\.https?:\/\/(.+)/);
+    if (nestedProtoMatch) {
+      fileUrl = `https://${nestedProtoMatch[1]}`;
+    } else {
+      // Handle private R2 host → public R2 domain
+      const privateHost = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
+      const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
+      if (fileUrl.includes(privateHost)) {
+        fileUrl = fileUrl
+          .replace(/^https?:\/\//, "")
+          .replace(new RegExp(`[^.]+\\.${privateHost.replace(/\./g, "\\.")}`), publicHost);
+        fileUrl = `https://${fileUrl}`;
+      }
     }
     
-    // 2. Swap Internal S3 Endpoint with Public R2 Domain
-    sanitized = sanitized.replace(
-      /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
-      "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
-    );
-
-    // 3. Final cleanup: Fix double https or missing protocol
-    sanitized = sanitized.replace(/^https:\/\/https:\/\//, "https://");
-    if (!sanitized.startsWith("http")) sanitized = "https://" + sanitized;
-    
-    console.log("[Replay] Final Sanitized URL:", sanitized);
-    return sanitized;
+    console.log("[Replay] Final Sanitized URL:", fileUrl);
+    return fileUrl;
   };
 
   if (loading) {

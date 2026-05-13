@@ -106,26 +106,24 @@ export async function POST(req: NextRequest) {
         if (fileUrl) {
           console.log("[Vault] Original fileUrl:", fileUrl);
           
-          let sanitized = fileUrl;
-          
-          // 1. Remove any leading protocol duplicates
-          sanitized = sanitized.replace(/^https?:\/\//, "");
-          sanitized = sanitized.replace(/^https?:\/\//, ""); // Double check for nested protocols
-          
-          // 2. Handle bucket prefix if present (e.g. bucket.account.r2.cloudflarestorage.com)
-          const r2Host = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
-          const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
-          
-          if (sanitized.includes(r2Host)) {
-            // Extract the path after the host
-            const parts = sanitized.split(r2Host);
-            const path = parts[1] || "";
-            sanitized = `${publicHost}${path}`;
+          // LiveKit builds URL as {bucket}.{endpoint}/{path}
+          // When endpoint includes https://, result is: "bucket.https://domain/path"
+          // or after Firestore storage: "https://bucket.https://domain/path"
+          // Pattern fix: strip everything before the nested https://
+          const nestedProtoMatch = fileUrl.match(/^(?:https?:\/\/)?[^/]+\.https?:\/\/(.+)/);
+          if (nestedProtoMatch) {
+            fileUrl = `https://${nestedProtoMatch[1]}`;
+          } else {
+            // Handle private R2 host → public R2 domain
+            const privateHost = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
+            const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
+            if (fileUrl.includes(privateHost)) {
+              fileUrl = fileUrl
+                .replace(/^https?:\/\//, "")
+                .replace(new RegExp(`[^.]+\.${privateHost.replace(/\./g, "\\.")}`), publicHost);
+              fileUrl = `https://${fileUrl}`;
+            }
           }
-          
-          // 3. Ensure clean https:// prefix
-          fileUrl = `https://${sanitized.replace(/\/+/g, "/")}`;
-          fileUrl = fileUrl.replace("https:/", "https://");
           
           console.log("[Vault] Sanitized fileUrl:", fileUrl);
         }
