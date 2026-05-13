@@ -106,23 +106,25 @@ export async function POST(req: NextRequest) {
         if (fileUrl) {
           console.log("[Vault] Original fileUrl:", fileUrl);
           
-          // LiveKit builds URL as {bucket}.{endpoint}/{path}
-          // When endpoint includes https://, result is: "bucket.https://domain/path"
-          // or after Firestore storage: "https://bucket.https://domain/path"
-          // Pattern fix: strip everything before the nested https://
+          const privateHost = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
+          const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
+
+          // 1. Handle nested protocol pattern: bucket.https://domain/path
           const nestedProtoMatch = fileUrl.match(/^(?:https?:\/\/)?[^/]+\.https?:\/\/(.+)/);
           if (nestedProtoMatch) {
             fileUrl = `https://${nestedProtoMatch[1]}`;
-          } else {
-            // Handle private R2 host → public R2 domain
-            const privateHost = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
-            const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
-            if (fileUrl.includes(privateHost)) {
-              fileUrl = fileUrl
-                .replace(/^https?:\/\//, "")
-                .replace(new RegExp(`[^.]+\.${privateHost.replace(/\./g, "\\.")}`), publicHost);
-              fileUrl = `https://${fileUrl}`;
-            }
+          }
+
+          // 2. Flexible Host Swap: Replace any variant of the private host with public domain
+          if (fileUrl.includes(privateHost)) {
+            // Remove protocol and bucket prefix if it exists before the private host
+            let clean = fileUrl.replace(/^https?:\/\//, "");
+            
+            // Regex to match: [anything.]privateHost and replace with publicHost
+            const hostRegex = new RegExp(`([^/]+\\.)?${privateHost.replace(/\./g, "\\.")}`);
+            clean = clean.replace(hostRegex, publicHost);
+            
+            fileUrl = `https://${clean}`;
           }
           
           console.log("[Vault] Sanitized fileUrl:", fileUrl);
