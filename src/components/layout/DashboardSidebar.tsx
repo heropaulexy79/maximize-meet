@@ -29,8 +29,6 @@ const menuItems = [
   { icon: Video, label: "Sessions", href: "/dashboard/sessions", adminOnly: false },
   { icon: Users, label: "Attendance", href: "/dashboard/attendance", adminOnly: true },
   { icon: BookOpen, label: "Vault", href: "/vault", adminOnly: false },
-  { icon: Users, label: "Cohorts", href: "/dashboard/cohorts", adminOnly: true },
-  { icon: ShieldCheck, label: "Leadership", href: "/dashboard/leadership", adminOnly: false },
 ];
 
 export function DashboardSidebar() {

@@ -773,6 +773,19 @@ function RoomContextWrapper({
     try {
       const idToken = await user?.getIdToken();
       
+      // 0. Ensure meetingTitle is available (fallback fetch)
+      let activeTitle = meetingTitle;
+      if (!activeTitle) {
+        try {
+          const sRes = await fetch("/api/sessions");
+          const sData = await sRes.json();
+          const session = sData.sessions?.find((s: any) => s.roomId === roomId);
+          if (session) activeTitle = session.title;
+        } catch (e) {
+          console.error("Fallback title fetch failed:", e);
+        }
+      }
+
       // 1. If starting, call the recording API first to get egressId
       let currentEgressId = null;
       if (newState) {
@@ -782,7 +795,7 @@ function RoomContextWrapper({
           body: JSON.stringify({ 
             action: "start", 
             roomName: roomId,
-            meetingTitle: meetingTitle
+            meetingTitle: activeTitle // Use the fetched title
           })
         });
         const recData = await recRes.json();

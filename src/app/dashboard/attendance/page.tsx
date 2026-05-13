@@ -36,7 +36,7 @@ interface AttendanceRecord {
 export default function AttendancePage() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -45,35 +45,39 @@ export default function AttendancePage() {
       return;
     }
 
-    if (isAdmin) {
-      // Use a flat collection query for real-time attendance updates
-      const q = query(collection(db, "attendance"), orderBy("joinedAt", "desc"), limit(100));
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const fetchedRecords: AttendanceRecord[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          fetchedRecords.push({
-            id: doc.id,
-            identity: data.identity,
-            name: data.name,
-            roomId: data.roomId || "Unknown Room",
-            joinedAt: data.joinedAt ? data.joinedAt.toDate() : null,
-            leftAt: data.leftAt ? data.leftAt.toDate() : null,
-            durationSeconds: data.durationSeconds || 0,
-          });
+    const fetchAttendance = async () => {
+      try {
+        const idToken = await user?.getIdToken();
+        const res = await fetch("/api/attendance", {
+          headers: {
+            "Authorization": `Bearer ${idToken}`
+          }
         });
-
-        setRecords(fetchedRecords);
-        setLoading(false);
-      }, (error) => {
+        const data = await res.json();
+        if (data.records) {
+          setRecords(data.records.map((r: any) => ({
+            ...r,
+            joinedAt: r.joinedAt ? new Date(r.joinedAt) : null,
+            leftAt: r.leftAt ? new Date(r.leftAt) : null,
+          })));
+        } else {
+          console.error("Attendance API error:", data.error);
+        }
+      } catch (error) {
         console.error("Error fetching attendance:", error);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
 
-      return () => unsubscribe();
+    if (isAdmin && user) {
+      fetchAttendance();
+      // Poll every 10 seconds for updates instead of real-time subscription
+      // to avoid client-side permission issues and keep it simple
+      const interval = setInterval(fetchAttendance, 10000);
+      return () => clearInterval(interval);
     }
-  }, [isAdmin, authLoading, router]);
+  }, [isAdmin, authLoading, router, user]);
 
   const formatDuration = (seconds: number) => {
     if (!seconds) return "0m";
