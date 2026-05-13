@@ -33,26 +33,56 @@ export async function GET(req: NextRequest) {
     attendanceSnapshot.docs.forEach(doc => {
       const data = doc.data();
       const roomId = data.roomId || "Unknown Room";
+      const identity = data.identity;
       
       if (!grouped[roomId]) {
         grouped[roomId] = {
           roomId,
           title: sessionMap.get(roomId) || "Unnamed Session",
-          records: []
+          participants: {} // Group by identity within session
         };
       }
 
-      grouped[roomId].records.push({
-        id: doc.id,
-        identity: data.identity,
-        name: data.name,
-        joinedAt: data.joinedAt ? data.joinedAt.toDate().toISOString() : null,
-        leftAt: data.leftAt ? data.leftAt.toDate().toISOString() : null,
-        durationSeconds: data.durationSeconds || 0,
-      });
+      const participantGroup = grouped[roomId].participants;
+      const joinedAt = data.joinedAt ? data.joinedAt.toDate() : null;
+      const leftAt = data.leftAt ? data.leftAt.toDate() : null;
+      const duration = data.durationSeconds || 0;
+
+      if (!participantGroup[identity]) {
+        participantGroup[identity] = {
+          id: doc.id,
+          identity,
+          name: data.name,
+          joinedAt: joinedAt,
+          leftAt: leftAt,
+          durationSeconds: duration,
+          isOnline: !leftAt
+        };
+      } else {
+        const p = participantGroup[identity];
+        // Earliest join time
+        if (joinedAt && (!p.joinedAt || joinedAt < p.joinedAt)) {
+          p.joinedAt = joinedAt;
+        }
+        // Latest leave time (if null, they are still in room)
+        if (!leftAt || !p.leftAt || leftAt > p.leftAt) {
+          p.leftAt = leftAt;
+        }
+        // Always online if any record has no leftAt
+        if (!leftAt) p.isOnline = true;
+        // Sum duration
+        p.durationSeconds += duration;
+      }
     });
 
-    const sessions = Object.values(grouped);
+    const sessions = Object.values(grouped).map((session: any) => ({
+      ...session,
+      records: Object.values(session.participants).map((p: any) => ({
+        ...p,
+        joinedAt: p.joinedAt ? p.joinedAt.toISOString() : null,
+        leftAt: p.leftAt ? p.leftAt.toISOString() : null,
+      }))
+    }));
 
     return NextResponse.json({ sessions });
   } catch (error: any) {

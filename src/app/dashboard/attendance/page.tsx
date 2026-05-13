@@ -183,7 +183,7 @@ export default function AttendancePage() {
                                 </div>
                               </td>
                               <td className="p-6 text-right">
-                                {!record.leftAt ? (
+                                {record.isOnline ? (
                                   <Badge className="bg-green-500/10 text-green-400 border-green-500/20">
                                     In Room
                                   </Badge>
