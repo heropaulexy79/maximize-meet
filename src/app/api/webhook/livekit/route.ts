@@ -99,9 +99,8 @@ export async function POST(req: NextRequest) {
           console.error("[Vault] Error resolving session title:", error);
         }
 
-        // 2. Generate Dynamic Thumbnail based on Title
-        const encodedTitle = encodeURIComponent(title);
-        const thumbnailUrl = `https://dynamic-og-image-generator.vercel.app/api/generate?title=${encodedTitle}&author=MAXIMIZE%20NATION&theme=dark&color=%231a2080`;
+        // 2. Optimized Thumbnail (Stable Education Theme)
+        const thumbnailUrl = `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80&auto=format&fit=crop`;
 
         // 3. Sanitize fileUrl (fix malformed R2/S3 URLs)
         if (fileUrl) {
@@ -109,24 +108,25 @@ export async function POST(req: NextRequest) {
           
           let sanitized = fileUrl;
           
-          // Brute-force protocol fix
-          if (sanitized.includes("https//")) {
-            sanitized = "https://" + sanitized.split("https//")[1];
-          } else if (sanitized.includes("http//")) {
-            sanitized = "http://" + sanitized.split("http//")[1];
+          // 1. Remove any leading protocol duplicates
+          sanitized = sanitized.replace(/^https?:\/\//, "");
+          sanitized = sanitized.replace(/^https?:\/\//, ""); // Double check for nested protocols
+          
+          // 2. Handle bucket prefix if present (e.g. bucket.account.r2.cloudflarestorage.com)
+          const r2Host = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
+          const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
+          
+          if (sanitized.includes(r2Host)) {
+            // Extract the path after the host
+            const parts = sanitized.split(r2Host);
+            const path = parts[1] || "";
+            sanitized = `${publicHost}${path}`;
           }
           
-          // Swap to Public Domain
-          sanitized = sanitized.replace(
-            /0d71f8982a04d4b7325afa19bc44654c\.r2\.cloudflarestorage\.com/, 
-            "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev"
-          );
+          // 3. Ensure clean https:// prefix
+          fileUrl = `https://${sanitized.replace(/\/+/g, "/")}`;
+          fileUrl = fileUrl.replace("https:/", "https://");
           
-          // Cleanup
-          sanitized = sanitized.replace(/^https:\/\/https:\/\//, "https://");
-          if (!sanitized.startsWith("http")) sanitized = "https://" + sanitized;
-          
-          fileUrl = sanitized;
           console.log("[Vault] Sanitized fileUrl:", fileUrl);
         }
 

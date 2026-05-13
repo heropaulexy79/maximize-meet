@@ -19,7 +19,7 @@ const egressClient = new EgressClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { action, roomName, egressId } = await req.json();
+    const { action, roomName, egressId, meetingTitle } = await req.json();
 
     // ── START ──────────────────────────────────────────────────────────────
     if (action === "start") {
@@ -62,9 +62,13 @@ export async function POST(req: NextRequest) {
         };
       }
 
+      const sanitizedTitle = meetingTitle 
+        ? meetingTitle.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-") 
+        : roomName;
+
       const fileOutput = new EncodedFileOutput({
         fileType: EncodedFileType.OGG,
-        filepath: `recordings/${roomName}-{time}.ogg`,
+        filepath: `recordings/${sanitizedTitle}-{time}.ogg`,
         output,
       });
 

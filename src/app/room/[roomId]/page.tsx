@@ -522,6 +522,23 @@ export default function RoomPage() {
   const [unreadChat, setUnreadChat] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
+  const [meetingTitle, setMeetingTitle] = useState("");
+
+  useEffect(() => {
+    const fetchSessionInfo = async () => {
+      try {
+        const res = await fetch("/api/sessions");
+        const data = await res.json();
+        if (data.sessions) {
+          const session = data.sessions.find((s: any) => s.roomId === roomId);
+          if (session) setMeetingTitle(session.title);
+        }
+      } catch (err) {
+        console.error("Failed to fetch session title:", err);
+      }
+    };
+    if (roomId) fetchSessionInfo();
+  }, [roomId]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -657,6 +674,7 @@ export default function RoomPage() {
           <RoomContextWrapper 
             user={user}
             roomId={roomId}
+            meetingTitle={meetingTitle}
             isAdmin={isAdmin}
             isRecording={isRecording}
             onToggleRecording={(rec: boolean) => setIsRecording(rec)}
@@ -714,6 +732,7 @@ function ChatSidebarWrapper({ onNewMessage, onClose }: { onNewMessage: (msg: any
 function RoomContextWrapper({ 
   user,
   roomId,
+  meetingTitle,
   isAdmin, 
   isRecording, 
   onToggleRecording, 
@@ -760,7 +779,11 @@ function RoomContextWrapper({
         const recRes = await fetch("/api/recording", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "start", roomName: roomId })
+          body: JSON.stringify({ 
+            action: "start", 
+            roomName: roomId,
+            meetingTitle: meetingTitle
+          })
         });
         const recData = await recRes.json();
         if (!recRes.ok) throw new Error(recData.error || "Failed to start recording");
