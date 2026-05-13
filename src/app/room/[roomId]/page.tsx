@@ -753,6 +753,41 @@ function RoomContextWrapper({
     
     try {
       const idToken = await user?.getIdToken();
+      
+      // 1. If starting, call the recording API first to get egressId
+      let currentEgressId = null;
+      if (newState) {
+        const recRes = await fetch("/api/recording", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "start", roomName: roomId })
+        });
+        const recData = await recRes.json();
+        if (!recRes.ok) throw new Error(recData.error || "Failed to start recording");
+        currentEgressId = recData.egressId;
+      } else {
+        // If stopping, get egressId from room metadata
+        try {
+          const roomMeta = room.metadata ? JSON.parse(room.metadata) : {};
+          currentEgressId = roomMeta.egressId;
+        } catch (e) {
+          console.error("Failed to parse room metadata for egressId:", e);
+        }
+
+        if (currentEgressId) {
+          const stopRes = await fetch("/api/recording", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "stop", egressId: currentEgressId })
+          });
+          if (!stopRes.ok) {
+            const stopData = await stopRes.json();
+            console.error("Stop recording failed:", stopData.error);
+          }
+        }
+      }
+
+      // 2. Sync to Room Metadata for all participants (visual state + egressId)
       const res = await fetch("/api/livekit/admin", {
         method: "POST",
         headers: {
@@ -762,24 +797,27 @@ function RoomContextWrapper({
         body: JSON.stringify({
           action: "updateRoom",
           roomName: roomId,
-          metadata: JSON.stringify({ isRecording: newState })
+          metadata: JSON.stringify({ 
+            isRecording: newState,
+            egressId: newState ? currentEgressId : null
+          })
         })
       });
 
       if (res.ok) {
         onToggleRecording(newState);
         if (newState) {
-          toast.success("Recording started");
+          toast.success("Recording started and saving to cloud");
         } else {
-          toast.info("Recording stopped");
+          toast.info("Recording stopped and finalizing");
         }
       } else {
         const data = await res.json();
         toast.error(data.error || "Failed to update recording status");
       }
-    } catch (error) {
-      console.error("Failed to update recording metadata:", error);
-      toast.error("Failed to update recording status");
+    } catch (error: any) {
+      console.error("Failed to toggle recording:", error);
+      toast.error(error.message || "Failed to update recording status");
     }
   };
 
