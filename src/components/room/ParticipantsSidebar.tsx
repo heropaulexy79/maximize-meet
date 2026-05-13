@@ -10,25 +10,11 @@ import { toast } from "sonner";
 import { auth, db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
-export function ParticipantsSidebar({ onClose, roomId }: { onClose: () => void; roomId: string }) {
+export function ParticipantsSidebar({ onClose, roomId, isAdmin }: { onClose: () => void; roomId: string; isAdmin: boolean }) {
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
-  const [isAdmin, setIsAdmin] = useState(false);
 
-  useEffect(() => {
-    const checkAdmin = async () => {
-      const user = auth.currentUser;
-      if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists() && userDoc.data().role === "admin") {
-          setIsAdmin(true);
-        }
-      }
-    };
-    checkAdmin();
-  }, []);
-
-  const handleAdminAction = async (action: "mute" | "kick" | "muteAll", identity?: string, trackSid?: string) => {
+  const handleAdminAction = async (action: string, identity?: string, trackSid?: string, metadata?: string) => {
     try {
       const user = auth.currentUser;
       if (!user) return;
@@ -40,7 +26,7 @@ export function ParticipantsSidebar({ onClose, roomId }: { onClose: () => void; 
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`
         },
-        body: JSON.stringify({ action, roomName: roomId, identity, trackSid }),
+        body: JSON.stringify({ action, roomName: roomId, identity, trackSid, metadata }),
       });
 
       const data = await res.json();
@@ -99,7 +85,9 @@ export function ParticipantsSidebar({ onClose, roomId }: { onClose: () => void; 
                     {p.identity} {isLocal && <span className="text-[10px] text-muted-foreground uppercase opacity-60"> (You)</span>}
                     {isHandRaised && <Hand className="w-4 h-4 text-amber-500 fill-amber-500 animate-bounce" />}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">Participant</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
+                    {metadata.role === "admin" ? <span className="text-primary font-bold">Host</span> : "Participant"}
+                  </div>
                 </div>
               </div>
 
@@ -111,6 +99,19 @@ export function ParticipantsSidebar({ onClose, roomId }: { onClose: () => void; 
 
                 {isAdmin && !isLocal && (
                   <div className="flex items-center gap-1">
+                    {/* Make Host Button */}
+                    {!metadata.role && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="w-9 h-9 rounded-xl text-primary/60 hover:text-primary hover:bg-primary/10"
+                        title="Make Host"
+                        onClick={() => handleAdminAction("updateParticipant", p.identity, undefined, JSON.stringify({ ...metadata, role: "admin" }))}
+                      >
+                        <ShieldAlert className="w-4 h-4" />
+                      </Button>
+                    )}
+                    
                     {!isAudioMuted && audioTrack && (
                       <Button 
                         variant="ghost" 

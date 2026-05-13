@@ -508,7 +508,15 @@ export default function RoomPage() {
   useWakeLock(true);
   const router = useRouter();
   const { roomId } = useParams();
-  const { user, isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin: firebaseAdmin, loading: authLoading } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const { localParticipant } = useLocalParticipant();
+
+  // Combine Firebase admin status and LiveKit metadata admin status
+  useEffect(() => {
+    const meta = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
+    setIsAdmin(firebaseAdmin || meta.role === "admin");
+  }, [firebaseAdmin, localParticipant.metadata]);
   const [token, setToken] = useState("");
   const [guestName, setGuestName] = useState("");
   const [showNameEntry, setShowNameEntry] = useState(false);
@@ -647,7 +655,11 @@ export default function RoomPage() {
             (participantsSidebarOpen || chatOpen || interactionsOpen) ? "translate-x-0" : "translate-x-full md:hidden"
           )}>
             <div className={cn("h-full", !participantsSidebarOpen && "hidden")}>
-              <ParticipantsSidebar onClose={() => setParticipantsSidebarOpen(false)} roomId={roomId as string} />
+              <ParticipantsSidebar 
+                onClose={() => setParticipantsSidebarOpen(false)} 
+                roomId={roomId as string} 
+                isAdmin={isAdmin}
+              />
             </div>
             
             <div className={cn("h-full", !chatOpen && "hidden")}>

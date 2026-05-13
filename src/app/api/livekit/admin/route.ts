@@ -25,15 +25,26 @@ export async function POST(req: NextRequest) {
     // Verify token and check admin role
     const decodedToken = await adminAuth.verifyIdToken(idToken);
     const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-    
-    if (!userDoc.exists || userDoc.data()?.role !== "admin") {
-      return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
-    }
+    const isFirebaseAdmin = userDoc.exists && userDoc.data()?.role === "admin";
 
-    const { action, roomName, identity, trackSid, metadata } = await req.json();
+    const { action, roomName, identity, trackSid, metadata: bodyMetadata } = await req.json();
 
     if (!roomName) {
       return NextResponse.json({ error: "roomName is required" }, { status: 400 });
+    }
+
+    // If not Firebase admin, check if they are a temporary admin in this room
+    if (!isFirebaseAdmin) {
+      try {
+        const callerIdentity = decodedToken.email || decodedToken.name || decodedToken.uid;
+        const participant = await roomService.getParticipant(roomName, callerIdentity);
+        const pMeta = participant.metadata ? JSON.parse(participant.metadata) : {};
+        if (pMeta.role !== "admin") {
+          return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
+        }
+      } catch (e) {
+        return NextResponse.json({ error: "Forbidden: Not an admin in this room" }, { status: 403 });
+      }
     }
 
     switch (action) {
@@ -74,7 +85,12 @@ export async function POST(req: NextRequest) {
         break;
 
       case "updateRoom":
-        await roomService.updateRoomMetadata(roomName, metadata);
+        await roomService.updateRoomMetadata(roomName, bodyMetadata);
+        break;
+
+      case "updateParticipant":
+        if (!identity) return NextResponse.json({ error: "identity is required" }, { status: 400 });
+        await roomService.updateParticipant(roomName, identity, bodyMetadata);
         break;
 
       default:
