@@ -12,6 +12,7 @@ import {
 import "@livekit/components-styles";
 import { Track, RoomEvent } from "livekit-client";
 import { useAuth } from "@/context/AuthContext";
+import { useParams, useRouter } from "next/navigation";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { usePictureInPicture } from "@/hooks/usePictureInPicture";
 import { createPortal } from "react-dom";
