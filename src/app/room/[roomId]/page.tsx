@@ -99,7 +99,7 @@ function RecordingIndicator({ isRecording }: { isRecording: boolean }) {
               <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
               <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-red-500 animate-ping opacity-75" />
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">Recording Live</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-red-500">Recording is Live</span>
           </div>
         </motion.div>
       )}
