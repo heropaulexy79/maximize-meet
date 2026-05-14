@@ -698,6 +698,7 @@ function RoomContent({
   isHandRaised, setIsHandRaised, inviteOpen, setInviteOpen, leaveOpen, setLeaveOpen, handleEndForAll
 }: any) {
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
+  const room = useRoomContext();
   const [isAdmin, setIsAdmin] = useState(false);
   const { isPipActive, togglePip, pipWindow } = usePictureInPicture();
   const router = useRouter();
@@ -799,7 +800,7 @@ function RoomContent({
           onToggleMic={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
           onToggleCamera={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
           onLeave={() => {
-            localParticipant.disconnect();
+            room.disconnect();
             router.push("/dashboard");
           }}
         />,
