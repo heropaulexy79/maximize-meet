@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     }
 
     const [attendanceSnapshot, sessionsSnapshot] = await Promise.all([
-      adminDb.collection("attendance").orderBy("joinedAt", "desc").get(),
+      adminDb.collection("attendance").get(),
       adminDb.collection("sessions").get()
     ]);
 
@@ -83,11 +83,17 @@ export async function GET(req: NextRequest) {
 
     const sessions = Object.values(grouped).map((session: any) => ({
       ...session,
-      records: Object.values(session.participants).map((p: any) => ({
-        ...p,
-        joinedAt: p.joinedAt ? p.joinedAt.toISOString() : null,
-        leftAt: p.leftAt ? p.leftAt.toISOString() : null,
-      }))
+      records: Object.values(session.participants)
+        .map((p: any) => ({
+          ...p,
+          joinedAt: p.joinedAt ? p.joinedAt.toISOString() : null,
+          leftAt: p.leftAt ? p.leftAt.toISOString() : null,
+        }))
+        .sort((a, b) => {
+          const dateA = a.joinedAt ? new Date(a.joinedAt).getTime() : 0;
+          const dateB = b.joinedAt ? new Date(b.joinedAt).getTime() : 0;
+          return dateB - dateA; // desc
+        })
     }));
 
     return NextResponse.json({ sessions });

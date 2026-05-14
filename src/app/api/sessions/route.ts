@@ -55,7 +55,6 @@ export async function GET(req: NextRequest) {
 
     const snapshot = await adminDb
       .collection("sessions")
-      .orderBy("time", "asc")
       .get();
 
     const sessions = snapshot.docs
@@ -67,7 +66,8 @@ export async function GET(req: NextRequest) {
         if (session.recurrence && session.recurrence !== "none") return true;
         // Filter out past one-time sessions
         return session.time >= now;
-      });
+      })
+      .sort((a, b) => a.time.localeCompare(b.time));
 
     return NextResponse.json({ sessions });
   } catch (error: any) {
