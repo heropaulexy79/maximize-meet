@@ -1,19 +1,17 @@
-/// <reference lib="webworker" />
+const sw = self as unknown as ServiceWorkerGlobalScope;
 
-declare const self: ServiceWorkerGlobalScope;
-
-self.addEventListener("install", () => {
+sw.addEventListener("install", () => {
   console.log("Maximize Meet SW: Installed");
-  self.skipWaiting();
+  sw.skipWaiting();
 });
 
-self.addEventListener("activate", (event) => {
+sw.addEventListener("activate", (event) => {
   console.log("Maximize Meet SW: Activated");
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(sw.clients.claim());
 });
 
 // Handle push notifications
-self.addEventListener("push", (event) => {
+sw.addEventListener("push", (event) => {
   if (event.data) {
     const data = event.data.json();
     const options = {
@@ -31,13 +29,13 @@ self.addEventListener("push", (event) => {
     };
 
     event.waitUntil(
-      self.registration.showNotification(data.title || "Maximize Meet", options)
+      sw.registration.showNotification(data.title || "Maximize Meet", options)
     );
   }
 });
 
 // Handle notification clicks
-self.addEventListener("notificationclick", (event) => {
+sw.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   if (event.action === "close") return;
@@ -45,7 +43,7 @@ self.addEventListener("notificationclick", (event) => {
   const urlToOpen = event.notification.data.url;
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
+    sw.clients.matchAll({ type: "window", includeUncontrolled: true }).then((windowClients) => {
       // If a window is already open, focus it
       for (const client of windowClients) {
         if (client.url.includes(urlToOpen) && "focus" in client) {
@@ -53,15 +51,15 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
       // Otherwise, open a new window
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(urlToOpen);
+      if (sw.clients.openWindow) {
+        return sw.clients.openWindow(urlToOpen);
       }
     })
   );
 });
 
 // Background Sync for offline messages or logs
-self.addEventListener("sync", (event) => {
+sw.addEventListener("sync", (event: any) => {
   if (event.tag === "sync-messages") {
     console.log("Maximize Meet SW: Syncing messages...");
     // Future: Add message sync logic here
@@ -69,9 +67,9 @@ self.addEventListener("sync", (event) => {
 });
 
 // Heartbeat to keep the SW alive when needed
-self.addEventListener("message", (event) => {
+sw.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
-    self.skipWaiting();
+    sw.skipWaiting();
   }
   
   if (event.data && event.data.type === "HEARTBEAT") {
