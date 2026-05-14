@@ -61,13 +61,14 @@ export default function DashboardPage() {
           setSessions(sData.sessions.slice(0, 4));
         }
 
-        // 2. Fetch Attendance / Stats for Learning Hours (Optimized to 1 Read)
+        // 2. Fetch Attendance / Stats for Learning Hours (Optimized to 1 Read via Server-Side API)
         if (isAdmin) {
-          const statsRef = doc(db, "stats", "global");
-          const statsSnap = await getDoc(statsRef);
-          if (statsSnap.exists()) {
-            const data = statsSnap.data();
-            setLearningHours(Math.round((data.totalLearningSeconds || 0) / 3600));
+          const statsRes = await fetch("/api/stats", {
+            headers: { "Authorization": `Bearer ${idToken}` }
+          });
+          const statsData = await statsRes.json();
+          if (statsData.totalLearningHours !== undefined) {
+            setLearningHours(statsData.totalLearningHours);
           }
         } else {
           // Fallback for regular members: Fetch their specific attendance
