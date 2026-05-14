@@ -75,7 +75,7 @@ export default function AttendancePage() {
 
     if (isAdmin && user) {
       fetchAttendance();
-      const interval = setInterval(fetchAttendance, 10000);
+      const interval = setInterval(fetchAttendance, 120000); // 2 minutes
       return () => clearInterval(interval);
     }
   }, [isAdmin, authLoading, router, user]);

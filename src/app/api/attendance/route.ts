@@ -18,8 +18,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
     }
 
+    // Only fetch records from the last 30 days by default to save quota
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
     const [attendanceSnapshot, sessionsSnapshot] = await Promise.all([
-      adminDb.collection("attendance").get(),
+      adminDb.collection("attendance")
+        .where("joinedAt", ">=", admin.firestore.Timestamp.fromDate(thirtyDaysAgo))
+        .get(),
       adminDb.collection("sessions").get()
     ]);
 
