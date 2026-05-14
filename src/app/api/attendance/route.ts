@@ -5,6 +5,7 @@ export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.warn("Unauthorized access attempt: Missing or invalid authorization header");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -44,8 +45,13 @@ export async function GET(req: NextRequest) {
       }
 
       const participantGroup = grouped[roomId].participants;
-      const joinedAt = data.joinedAt ? data.joinedAt.toDate() : null;
-      const leftAt = data.leftAt ? data.leftAt.toDate() : null;
+      const joinedAt = data.joinedAt && typeof data.joinedAt.toDate === "function" 
+        ? data.joinedAt.toDate() 
+        : (data.joinedAt ? new Date(data.joinedAt) : null);
+        
+      const leftAt = data.leftAt && typeof data.leftAt.toDate === "function"
+        ? data.leftAt.toDate()
+        : (data.leftAt ? new Date(data.leftAt) : null);
       const duration = data.durationSeconds || 0;
 
       if (!participantGroup[identity]) {
@@ -86,7 +92,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ sessions });
   } catch (error: any) {
-    console.error("Attendance API error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Critical Error in Attendance API:", error);
+    return NextResponse.json({ 
+      error: error.message || "Internal Server Error",
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+    }, { status: 500 });
   }
 }

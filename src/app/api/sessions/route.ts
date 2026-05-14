@@ -71,7 +71,11 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ sessions });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Critical Error in GET sessions API:", error);
+    return NextResponse.json({ 
+      error: error.message || "Internal Server Error",
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+    }, { status: 500 });
   }
 }
 
