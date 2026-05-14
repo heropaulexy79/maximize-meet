@@ -21,12 +21,12 @@ export async function GET(req: NextRequest) {
     }
 
     const statsSnap = await adminDb.collection("stats").doc("global").get();
-    const stats = statsSnap.exists ? statsSnap.data() : { totalLearningSeconds: 0 };
+    const stats = statsSnap.data() || { totalLearningSeconds: 0, totalParticipantEntries: 0, updatedAt: null };
 
     return NextResponse.json({ 
       totalLearningHours: Math.round((stats.totalLearningSeconds || 0) / 3600),
       totalParticipantEntries: stats.totalParticipantEntries || 0,
-      updatedAt: stats.updatedAt ? stats.updatedAt.toDate().toISOString() : null
+      updatedAt: stats.updatedAt ? (typeof stats.updatedAt.toDate === 'function' ? stats.updatedAt.toDate().toISOString() : stats.updatedAt) : null
     });
 
   } catch (error: any) {
