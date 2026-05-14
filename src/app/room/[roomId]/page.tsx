@@ -12,8 +12,10 @@ import {
 import "@livekit/components-styles";
 import { Track, RoomEvent } from "livekit-client";
 import { useAuth } from "@/context/AuthContext";
-import { useParams, useRouter } from "next/navigation";
 import { useWakeLock } from "@/hooks/useWakeLock";
+import { usePictureInPicture } from "@/hooks/usePictureInPicture";
+import { createPortal } from "react-dom";
+import { PipWindow } from "@/components/room/PipWindow";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic,
@@ -198,6 +200,8 @@ function CustomControlDock({
   unreadChat,
   lastMessage,
   setLeaveOpen,
+  isPipActive,
+  onTogglePip,
 }: any) {
   const room = useRoomContext();
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
@@ -314,6 +318,13 @@ function CustomControlDock({
                 {isRecording ? <CircleStop className="w-5 h-5" /> : <CircleDot className="w-5 h-5" />}
               </Button>
             )}
+
+            <Button variant="ghost" onClick={onTogglePip} className={cn(
+              "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+              isPipActive ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
+            )}>
+              <Maximize2 className="w-5 h-5" />
+            </Button>
           </div>
 
           <Button variant="destructive" onClick={() => setLeaveOpen(true)} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
@@ -685,8 +696,9 @@ function RoomContent({
   interactionsOpen, setInteractionsOpen, unreadChat, setUnreadChat, lastMessage, setLastMessage,
   isHandRaised, setIsHandRaised, inviteOpen, setInviteOpen, leaveOpen, setLeaveOpen, handleEndForAll
 }: any) {
-  const { localParticipant } = useLocalParticipant();
+  const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
   const [isAdmin, setIsAdmin] = useState(false);
+  const { isPipActive, togglePip, pipWindow } = usePictureInPicture();
   const router = useRouter();
 
   useEffect(() => {
@@ -760,6 +772,8 @@ function RoomContent({
           layout={layout}
           setLayout={setLayout}
           lastMessage={lastMessage}
+          isPipActive={isPipActive}
+          onTogglePip={togglePip}
         />
       </div>
 
@@ -774,6 +788,22 @@ function RoomContent({
       />
 
       <RoomAudioRenderer />
+
+      {/* Picture-in-Picture Portal */}
+      {isPipActive && pipWindow && createPortal(
+        <PipWindow 
+          activeSpeakerName={user?.displayName || "Participant"}
+          isMuted={!isMicrophoneEnabled}
+          isCameraOff={!isCameraEnabled}
+          onToggleMic={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
+          onToggleCamera={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
+          onLeave={() => {
+            localParticipant.disconnect();
+            router.push("/dashboard");
+          }}
+        />,
+        pipWindow.document.body
+      )}
     </>
   );
 }
@@ -824,7 +854,9 @@ function RoomContextWrapper({
   setIsHandRaised,
   layout,
   setLayout,
-  lastMessage
+  lastMessage,
+  isPipActive,
+  onTogglePip,
 }: any) {
   const room = useRoomContext();
   
@@ -951,6 +983,8 @@ function RoomContextWrapper({
       isAdmin={isAdmin}
       unreadChat={unreadChat}
       lastMessage={lastMessage}
+      isPipActive={isPipActive}
+      onTogglePip={onTogglePip}
     />
   );
 }
