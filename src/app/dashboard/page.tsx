@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot, query, orderBy, limit, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit, getDocs, doc, getDoc } from "firebase/firestore";
 
 interface SessionData {
   id: string;
@@ -61,22 +61,31 @@ export default function DashboardPage() {
           setSessions(sData.sessions.slice(0, 4));
         }
 
-        // 2. Fetch Attendance for Learning Hours
-        const aRes = await fetch("/api/attendance", {
-          headers: { "Authorization": `Bearer ${idToken}` }
-        });
-        const aData = await aRes.json();
-        if (aData.sessions) {
-          let totalSeconds = 0;
-          aData.sessions.forEach((s: any) => {
-            s.records.forEach((r: any) => {
-              // If admin, count all. If member, count only their own
-              if (isAdmin || r.identity === user?.uid) {
-                totalSeconds += r.durationSeconds;
-              }
-            });
+        // 2. Fetch Attendance / Stats for Learning Hours (Optimized to 1 Read)
+        if (isAdmin) {
+          const statsRef = doc(db, "stats", "global");
+          const statsSnap = await getDoc(statsRef);
+          if (statsSnap.exists()) {
+            const data = statsSnap.data();
+            setLearningHours(Math.round((data.totalLearningSeconds || 0) / 3600));
+          }
+        } else {
+          // Fallback for regular members: Fetch their specific attendance
+          const aRes = await fetch("/api/attendance", {
+            headers: { "Authorization": `Bearer ${idToken}` }
           });
-          setLearningHours(Math.round(totalSeconds / 3600));
+          const aData = await aRes.json();
+          if (aData.sessions) {
+            let totalSeconds = 0;
+            aData.sessions.forEach((s: any) => {
+              s.records.forEach((r: any) => {
+                if (r.identity === user?.uid) {
+                  totalSeconds += r.durationSeconds;
+                }
+              });
+            });
+            setLearningHours(Math.round(totalSeconds / 3600));
+          }
         }
 
         // 3. Fetch Replays

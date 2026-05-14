@@ -63,6 +63,16 @@ export async function POST(req: NextRequest) {
           leftAt: admin.firestore.Timestamp.fromDate(eventTime),
           durationSeconds: durationSeconds,
         }, { merge: true });
+
+        // Update global stats to save quota (Aggregation)
+        if (durationSeconds > 0) {
+          const statsRef = adminDb.collection("stats").doc("global");
+          await statsRef.set({
+            totalLearningSeconds: admin.firestore.FieldValue.increment(durationSeconds),
+            totalParticipantEntries: admin.firestore.FieldValue.increment(1),
+            updatedAt: admin.firestore.Timestamp.fromDate(eventTime)
+          }, { merge: true });
+        }
         
         console.log(`[Attendance] Recorded LEAVE for ${participant.identity} in room ${room.name} (Duration: ${durationSeconds}s)`);
       }
