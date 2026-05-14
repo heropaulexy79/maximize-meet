@@ -58,6 +58,11 @@ export function useWakeLock(enabled: boolean = true) {
     intervalRef.current = setInterval(() => {
       // Requesting animation frame keeps the event loop from being fully suspended
       requestAnimationFrame(() => {});
+      
+      // Heartbeat to Service Worker
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: "HEARTBEAT" });
+      }
     }, 10_000);
   }, []);
 

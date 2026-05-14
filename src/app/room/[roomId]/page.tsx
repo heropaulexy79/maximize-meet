@@ -620,12 +620,26 @@ export default function RoomPage() {
     </div>
   );
 
+  // Request notification permission for background alerts
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
   return (
     <div className="h-screen w-full bg-zinc-950 flex flex-col overflow-hidden relative">
       <LiveKitRoom
         token={token}
         serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
         connect={true}
+        options={{
+          publishDefaults: {
+            videoCodec: 'h264',
+          },
+          adaptiveStream: true,
+          dynacast: true,
+        }}
         className="flex-1 flex flex-col min-h-0"
         onDisconnected={() => {
           toast.info("Disconnected from meeting.");
@@ -771,7 +785,17 @@ function ChatSidebarWrapper({ onNewMessage, onClose }: { onNewMessage: (msg: any
     const currentCount = chatMessages.length;
     if (currentCount > prevCountRef.current) {
       const newMsgs = chatMessages.slice(prevCountRef.current);
-      newMsgs.forEach(msg => onNewMessage(msg));
+      newMsgs.forEach(msg => {
+        onNewMessage(msg);
+        
+        // Show notification if app is in background
+        if (document.visibilityState === "hidden" && Notification.permission === "granted") {
+          new Notification(`New message from ${msg.from?.name || msg.from?.identity || "Someone"}`, {
+            body: msg.message,
+            icon: "/icons/icon-192x192.png",
+          });
+        }
+      });
     }
     prevCountRef.current = currentCount;
   }, [chatMessages, onNewMessage]);
