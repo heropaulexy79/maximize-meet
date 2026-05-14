@@ -608,6 +608,13 @@ export default function RoomPage() {
     }
   };
 
+  // Request notification permission for background alerts
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
   if (!token) return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center gap-6">
       <GuestNameDialog open={showNameEntry} onJoin={(name) => setGuestName(name)} />
@@ -619,13 +626,6 @@ export default function RoomPage() {
       )}
     </div>
   );
-
-  // Request notification permission for background alerts
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  }, []);
 
   return (
     <div className="h-screen w-full bg-zinc-950 flex flex-col overflow-hidden relative">
