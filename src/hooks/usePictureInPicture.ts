@@ -11,13 +11,22 @@ export function usePictureInPicture() {
   const [isPipActive, setIsPipActive] = useState(false);
   const pipWindowRef = useRef<any>(null);
 
+  /**
+   * enterPip
+   * Triggers Picture-in-Picture mode.
+   * If documentPictureInPicture is supported, it opens a custom UI window.
+   * Fallback: Standard video Picture-in-Picture.
+   */
   const enterPip = useCallback(async (videoElement?: HTMLVideoElement) => {
     try {
       // 1. Try Document Picture-in-Picture (Full UI support)
       if ("documentPictureInPicture" in window) {
+        // If already active, don't re-open
+        if (pipWindowRef.current) return pipWindowRef.current;
+
         const pipWindow = await (window as any).documentPictureInPicture.requestWindow({
-          width: 400,
-          height: 300,
+          width: 420,
+          height: 320,
         });
 
         pipWindowRef.current = pipWindow;
@@ -27,14 +36,21 @@ export function usePictureInPicture() {
         const allStyleSheets = Array.from(document.styleSheets);
         allStyleSheets.forEach((styleSheet) => {
           try {
-            const cssRules = Array.from(styleSheet.cssRules)
-              .map((rule) => rule.cssText)
-              .join("");
-            const style = document.createElement("style");
-            style.textContent = cssRules;
-            pipWindow.document.head.appendChild(style);
+            if (styleSheet.href) {
+              const link = document.createElement("link");
+              link.rel = "stylesheet";
+              link.href = styleSheet.href;
+              pipWindow.document.head.appendChild(link);
+            } else {
+              const cssRules = Array.from(styleSheet.cssRules)
+                .map((rule) => rule.cssText)
+                .join("");
+              const style = document.createElement("style");
+              style.textContent = cssRules;
+              pipWindow.document.head.appendChild(style);
+            }
           } catch (e) {
-            // Fallback for cross-origin stylesheets
+            // Fallback for cross-origin or failed rules
             if (styleSheet.href) {
               const link = document.createElement("link");
               link.rel = "stylesheet";
@@ -53,12 +69,14 @@ export function usePictureInPicture() {
       }
 
       // 2. Fallback: Standard Video PiP
-      if (videoElement && videoElement.requestPictureInPicture) {
-        await videoElement.requestPictureInPicture();
+      const video = videoElement || document.querySelector("video");
+      if (video && video.requestPictureInPicture) {
+        await video.requestPictureInPicture();
         setIsPipActive(true);
-        videoElement.addEventListener("leavepictureinpicture", () => {
+        video.addEventListener("leavepictureinpicture", () => {
           setIsPipActive(false);
         }, { once: true });
+        return true;
       }
     } catch (err) {
       console.error("[PiP] Failed to enter Picture-in-Picture:", err);
@@ -84,12 +102,17 @@ export function usePictureInPicture() {
     }
   }, [isPipActive, enterPip, exitPip]);
 
-  // Automatic PiP on visibility change
+  // Handle automatic PiP on visibility change (minimize)
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === "hidden" && !isPipActive) {
-        // We can't automatically trigger Document PiP without user gesture
-        // But we can try Video PiP if a video element is provided or tracked
+        // Try to find a video element and enable autoPiP if supported
+        const video = document.querySelector("video");
+        if (video) {
+          (video as any).autoPictureInPicture = true;
+          // We can't always call enterPip() here due to gesture requirement,
+          // but some browsers allow it if autoPictureInPicture is true.
+        }
       }
     };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface PipWindowProps {
@@ -11,6 +11,7 @@ interface PipWindowProps {
   onToggleMic: () => void;
   onToggleCamera: () => void;
   onLeave: () => void;
+  onExitPip: () => void;
 }
 
 /**
@@ -24,6 +25,7 @@ export function PipWindow({
   onToggleMic,
   onToggleCamera,
   onLeave,
+  onExitPip,
 }: PipWindowProps) {
   return (
     <div className="fixed inset-0 bg-[#050a1a] flex flex-col items-center justify-center p-4 overflow-hidden text-white font-sans antialiased">
@@ -35,8 +37,16 @@ export function PipWindow({
             {activeSpeakerName}
           </span>
         </div>
-        <div className="text-[10px] font-mono text-white/40 tracking-tighter">
-          LIVE SESSION
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onExitPip}
+            className="text-[10px] font-bold text-primary hover:text-white transition-colors flex items-center gap-1 uppercase tracking-tighter"
+          >
+            Return
+          </button>
+          <div className="text-[10px] font-mono text-white/40 tracking-tighter">
+            LIVE SESSION
+          </div>
         </div>
       </div>
 
@@ -71,6 +81,15 @@ export function PipWindow({
         </Button>
 
         <div className="w-px h-6 bg-white/10 mx-1" />
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onExitPip}
+          className="w-10 h-10 rounded-xl text-primary hover:bg-primary/10 transition-all"
+        >
+          <ExternalLink className="w-4 h-4" />
+        </Button>
 
         <Button
           variant="destructive"

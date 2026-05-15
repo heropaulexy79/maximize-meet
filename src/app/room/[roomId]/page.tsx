@@ -53,7 +53,9 @@ import {
   MoreVertical,
   X,
   AlertCircle,
-  Power
+  Power,
+  Minimize2,
+  ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -203,6 +205,7 @@ function CustomControlDock({
   setLeaveOpen,
   isPipActive,
   onTogglePip,
+  onMinimize,
 }: any) {
   const room = useRoomContext();
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
@@ -320,12 +323,32 @@ function CustomControlDock({
               </Button>
             )}
 
-            <Button variant="ghost" onClick={onTogglePip} className={cn(
-              "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
-              isPipActive ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
-            )}>
-              <Maximize2 className="w-5 h-5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger>
+                <Button variant="ghost" onClick={onMinimize} className={cn(
+                  "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300 bg-transparent border-transparent text-white hover:bg-white/5"
+                )}>
+                  <Minimize2 className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-zinc-900 border-white/10 text-white">
+                <p>Minimize to Floating Window</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger>
+                <Button variant="ghost" onClick={onTogglePip} className={cn(
+                  "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+                  isPipActive ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
+                )}>
+                  <ExternalLink className="w-5 h-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="bg-zinc-900 border-white/10 text-white">
+                <p>Toggle Picture-in-Picture</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           <Button variant="destructive" onClick={() => setLeaveOpen(true)} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
@@ -715,8 +738,37 @@ function RoomContent({
       
       {/* Main Interaction Area */}
       <div className="flex-1 flex overflow-hidden relative">
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 relative">
           <MeetingGrid layout={layout} />
+          
+          {/* Shrunk State Overlay */}
+          <AnimatePresence>
+            {isPipActive && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 z-50 bg-zinc-950/80 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center"
+              >
+                <div className="w-24 h-24 rounded-3xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6 relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-3xl blur-2xl animate-pulse" />
+                  <Minimize2 className="w-10 h-10 text-primary relative z-10" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">Meeting in Floating Window</h2>
+                <p className="text-zinc-400 max-w-sm mb-8">
+                  The meeting is currently running in a separate floating window. You can continue browsing or return to full screen.
+                </p>
+                <Button 
+                  onClick={() => togglePip()} 
+                  variant="outline" 
+                  className="rounded-xl border-white/10 hover:bg-white/5 text-white gap-2"
+                >
+                  <Maximize2 className="w-4 h-4" />
+                  Return to Full Screen
+                </Button>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Persistent Sidebar Container */}
@@ -775,7 +827,8 @@ function RoomContent({
           setLayout={setLayout}
           lastMessage={lastMessage}
           isPipActive={isPipActive}
-          onTogglePip={togglePip}
+          onTogglePip={() => togglePip()}
+          onMinimize={() => togglePip()}
         />
       </div>
 
@@ -803,6 +856,7 @@ function RoomContent({
             room.disconnect();
             router.push("/dashboard");
           }}
+          onExitPip={() => togglePip()}
         />,
         pipWindow.document.body
       )}
@@ -859,6 +913,7 @@ function RoomContextWrapper({
   lastMessage,
   isPipActive,
   onTogglePip,
+  onMinimize,
 }: any) {
   const room = useRoomContext();
   
@@ -987,6 +1042,7 @@ function RoomContextWrapper({
       lastMessage={lastMessage}
       isPipActive={isPipActive}
       onTogglePip={onTogglePip}
+      onMinimize={onMinimize}
     />
   );
 }
