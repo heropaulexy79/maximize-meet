@@ -84,8 +84,19 @@ export function usePictureInPicture() {
 
       // 2. Fallback: Standard Video PiP
       console.log("[PiP] Falling back to standard Video PiP");
-      const video = videoElement || document.querySelector("video");
+      
+      // Find the best video element: 
+      // 1. Provided element
+      // 2. Largest visible video (likely the main speaker)
+      // 3. Any video
+      let video = videoElement;
+      if (!video) {
+        const videos = Array.from(document.querySelectorAll("video"));
+        video = videos.find(v => v.readyState >= 2 && v.videoWidth > 0) || videos[0];
+      }
+
       if (video && video.requestPictureInPicture) {
+        console.log("[PiP] Requesting Video PiP for:", video);
         await video.requestPictureInPicture();
         setIsPipActive(true);
         video.addEventListener("leavepictureinpicture", () => {
@@ -94,7 +105,14 @@ export function usePictureInPicture() {
         isEnteringRef.current = false;
         return true;
       } else {
-        console.warn("[PiP] No video element found for fallback PiP");
+        console.warn("[PiP] No compatible video element found or requestPictureInPicture not supported");
+        // Final attempt for mobile Safari - some older versions use webkitRequestFullscreen or similar for PiP
+        if (video && (video as any).webkitSetPresentationMode) {
+          (video as any).webkitSetPresentationMode("picture-in-picture");
+          setIsPipActive(true);
+          isEnteringRef.current = false;
+          return true;
+        }
       }
     } catch (err) {
       console.error("[PiP] Failed to enter Picture-in-Picture:", err);

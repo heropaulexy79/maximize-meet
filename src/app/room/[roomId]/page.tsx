@@ -262,6 +262,13 @@ function CustomControlDock({
             </DropdownMenuContent>
           </DropdownMenu>
 
+          <Button variant="ghost" onClick={() => { console.log("PiP clicked"); onTogglePip(); }} className={cn(
+            "w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+            isPipActive ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
+          )}>
+            <ExternalLink className="w-4 h-4 md:w-5 md:h-5" />
+          </Button>
+
           {/* Mobile "More" Toggle */}
           <div className="sm:hidden">
             <DropdownMenu>
@@ -287,6 +294,20 @@ function CustomControlDock({
                 <DropdownMenuItem onClick={toggleHand} className={cn("flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer", isHandRaised && "bg-amber-500/10")}>
                   <Hand className={cn("w-4 h-4", isHandRaised ? "text-amber-500" : "text-primary")} />
                   <span className="font-medium">{isHandRaised ? "Lower Hand" : "Raise Hand"}</span>
+                </DropdownMenuItem>
+
+                <Separator className="bg-white/10" />
+
+                {typeof window !== "undefined" && "documentPictureInPicture" in window && (
+                  <DropdownMenuItem onClick={() => { console.log("Mobile Minimize clicked"); onMinimize(); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer">
+                    <Minimize2 className="w-4 h-4 text-primary" />
+                    <span className="font-medium">Minimize Window</span>
+                  </DropdownMenuItem>
+                )}
+
+                <DropdownMenuItem onClick={() => { console.log("Mobile PiP clicked"); onTogglePip(); }} className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer">
+                  <ExternalLink className="w-4 h-4 text-primary" />
+                  <span className="font-medium">Picture-in-Picture</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -323,18 +344,13 @@ function CustomControlDock({
               </Button>
             )}
 
-            <Button variant="ghost" onClick={() => { console.log("Minimize clicked"); onMinimize(); }} className={cn(
-              "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300 bg-transparent border-transparent text-white hover:bg-white/5"
-            )}>
-              <Minimize2 className="w-5 h-5" />
-            </Button>
-
-            <Button variant="ghost" onClick={() => { console.log("PiP clicked"); onTogglePip(); }} className={cn(
-              "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
-              isPipActive ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
-            )}>
-              <ExternalLink className="w-5 h-5" />
-            </Button>
+            {typeof window !== "undefined" && "documentPictureInPicture" in window && (
+              <Button variant="ghost" onClick={() => { console.log("Minimize clicked"); onMinimize(); }} className={cn(
+                "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300 bg-transparent border-transparent text-white hover:bg-white/5"
+              )}>
+                <Minimize2 className="w-5 h-5" />
+              </Button>
+            )}
           </div>
 
           <Button variant="destructive" onClick={() => setLeaveOpen(true)} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
