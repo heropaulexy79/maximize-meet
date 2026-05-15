@@ -9,66 +9,81 @@ import { useState, useCallback, useEffect, useRef } from "react";
  */
 export function usePictureInPicture() {
   const [isPipActive, setIsPipActive] = useState(false);
-  const pipWindowRef = useRef<any>(null);
+  const [pipWindow, setPipWindow] = useState<any>(null);
+  const isEnteringRef = useRef(false);
 
   /**
    * enterPip
    * Triggers Picture-in-Picture mode.
-   * If documentPictureInPicture is supported, it opens a custom UI window.
-   * Fallback: Standard video Picture-in-Picture.
    */
   const enterPip = useCallback(async (videoElement?: HTMLVideoElement) => {
+    if (isEnteringRef.current) return;
+    isEnteringRef.current = true;
+    console.log("[PiP] Attempting to enter PiP...");
+
     try {
       // 1. Try Document Picture-in-Picture (Full UI support)
       if ("documentPictureInPicture" in window) {
-        // If already active, don't re-open
-        if (pipWindowRef.current) return pipWindowRef.current;
+        console.log("[PiP] Using Document Picture-in-Picture API");
+        
+        if (pipWindow) {
+          console.log("[PiP] PiP window already exists, focusing...");
+          pipWindow.focus();
+          isEnteringRef.current = false;
+          return pipWindow;
+        }
 
-        const pipWindow = await (window as any).documentPictureInPicture.requestWindow({
+        const newPipWindow = await (window as any).documentPictureInPicture.requestWindow({
           width: 420,
-          height: 320,
+          height: 340,
         });
 
-        pipWindowRef.current = pipWindow;
+        console.log("[PiP] Document PiP window opened");
+        setPipWindow(newPipWindow);
         setIsPipActive(true);
 
         // Copy styles to the new window
-        const allStyleSheets = Array.from(document.styleSheets);
-        allStyleSheets.forEach((styleSheet) => {
-          try {
-            if (styleSheet.href) {
-              const link = document.createElement("link");
-              link.rel = "stylesheet";
-              link.href = styleSheet.href;
-              pipWindow.document.head.appendChild(link);
-            } else {
-              const cssRules = Array.from(styleSheet.cssRules)
-                .map((rule) => rule.cssText)
-                .join("");
-              const style = document.createElement("style");
-              style.textContent = cssRules;
-              pipWindow.document.head.appendChild(style);
+        setTimeout(() => {
+          const allStyleSheets = Array.from(document.styleSheets);
+          allStyleSheets.forEach((styleSheet) => {
+            try {
+              if (styleSheet.href) {
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = styleSheet.href;
+                newPipWindow.document.head.appendChild(link);
+              } else {
+                const cssRules = Array.from(styleSheet.cssRules)
+                  .map((rule) => rule.cssText)
+                  .join("");
+                const style = document.createElement("style");
+                style.textContent = cssRules;
+                newPipWindow.document.head.appendChild(style);
+              }
+            } catch (e) {
+              console.warn("[PiP] Failed to copy a stylesheet:", e);
+              if (styleSheet.href) {
+                const link = document.createElement("link");
+                link.rel = "stylesheet";
+                link.href = styleSheet.href;
+                newPipWindow.document.head.appendChild(link);
+              }
             }
-          } catch (e) {
-            // Fallback for cross-origin or failed rules
-            if (styleSheet.href) {
-              const link = document.createElement("link");
-              link.rel = "stylesheet";
-              link.href = styleSheet.href;
-              pipWindow.document.head.appendChild(link);
-            }
-          }
-        });
+          });
+        }, 0);
 
-        pipWindow.addEventListener("pagehide", () => {
+        newPipWindow.addEventListener("pagehide", () => {
+          console.log("[PiP] Document PiP window closed");
           setIsPipActive(false);
-          pipWindowRef.current = null;
+          setPipWindow(null);
         });
 
-        return pipWindow;
+        isEnteringRef.current = false;
+        return newPipWindow;
       }
 
       // 2. Fallback: Standard Video PiP
+      console.log("[PiP] Falling back to standard Video PiP");
       const video = videoElement || document.querySelector("video");
       if (video && video.requestPictureInPicture) {
         await video.requestPictureInPicture();
@@ -76,23 +91,28 @@ export function usePictureInPicture() {
         video.addEventListener("leavepictureinpicture", () => {
           setIsPipActive(false);
         }, { once: true });
+        isEnteringRef.current = false;
         return true;
+      } else {
+        console.warn("[PiP] No video element found for fallback PiP");
       }
     } catch (err) {
       console.error("[PiP] Failed to enter Picture-in-Picture:", err);
     }
+    isEnteringRef.current = false;
     return null;
-  }, []);
+  }, [pipWindow]);
 
   const exitPip = useCallback(async () => {
-    if (pipWindowRef.current) {
-      pipWindowRef.current.close();
-      pipWindowRef.current = null;
+    console.log("[PiP] Exiting PiP...");
+    if (pipWindow) {
+      pipWindow.close();
+      setPipWindow(null);
     } else if (document.pictureInPictureElement) {
       await document.exitPictureInPicture();
     }
     setIsPipActive(false);
-  }, []);
+  }, [pipWindow]);
 
   const togglePip = useCallback(async (videoElement?: HTMLVideoElement) => {
     if (isPipActive) {
@@ -106,12 +126,9 @@ export function usePictureInPicture() {
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === "hidden" && !isPipActive) {
-        // Try to find a video element and enable autoPiP if supported
         const video = document.querySelector("video");
         if (video) {
           (video as any).autoPictureInPicture = true;
-          // We can't always call enterPip() here due to gesture requirement,
-          // but some browsers allow it if autoPictureInPicture is true.
         }
       }
     };
@@ -120,5 +137,5 @@ export function usePictureInPicture() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [isPipActive]);
 
-  return { isPipActive, enterPip, exitPip, togglePip, pipWindow: pipWindowRef.current };
+  return { isPipActive, enterPip, exitPip, togglePip, pipWindow };
 }

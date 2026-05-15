@@ -323,32 +323,18 @@ function CustomControlDock({
               </Button>
             )}
 
-            <Tooltip>
-              <TooltipTrigger>
-                <Button variant="ghost" onClick={onMinimize} className={cn(
-                  "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300 bg-transparent border-transparent text-white hover:bg-white/5"
-                )}>
-                  <Minimize2 className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-zinc-900 border-white/10 text-white">
-                <p>Minimize to Floating Window</p>
-              </TooltipContent>
-            </Tooltip>
+            <Button variant="ghost" onClick={() => { console.log("Minimize clicked"); onMinimize(); }} className={cn(
+              "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300 bg-transparent border-transparent text-white hover:bg-white/5"
+            )}>
+              <Minimize2 className="w-5 h-5" />
+            </Button>
 
-            <Tooltip>
-              <TooltipTrigger>
-                <Button variant="ghost" onClick={onTogglePip} className={cn(
-                  "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
-                  isPipActive ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
-                )}>
-                  <ExternalLink className="w-5 h-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="bg-zinc-900 border-white/10 text-white">
-                <p>Toggle Picture-in-Picture</p>
-              </TooltipContent>
-            </Tooltip>
+            <Button variant="ghost" onClick={() => { console.log("PiP clicked"); onTogglePip(); }} className={cn(
+              "w-11 h-11 md:w-12 md:h-12 rounded-xl md:rounded-2xl transition-all border duration-300",
+              isPipActive ? "bg-primary/20 border-primary text-primary shadow-lg shadow-primary/10" : "bg-transparent border-transparent text-white hover:bg-white/5"
+            )}>
+              <ExternalLink className="w-5 h-5" />
+            </Button>
           </div>
 
           <Button variant="destructive" onClick={() => setLeaveOpen(true)} className="w-12 md:w-14 h-10 md:h-12 rounded-xl md:rounded-2xl bg-red-500 hover:bg-red-600 shadow-xl shadow-red-500/20 transition-all active:scale-95">
