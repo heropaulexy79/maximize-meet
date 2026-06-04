@@ -81,7 +81,8 @@ export default function SessionDetailPage() {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${idToken}`
               },
-              body: JSON.stringify({ fileKey: extractFileKey(data.fileUrl) })
+              // Send the raw fileUrl; the backend sanitizer handles path normalization
+              body: JSON.stringify({ fileKey: data.fileUrl })
             });
             const { url } = await res.json();
             setSignedUrl(url);

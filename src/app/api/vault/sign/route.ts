@@ -13,6 +13,32 @@ const s3Client = new S3Client({
   },
 });
 
+/**
+ * Extracts and sanitizes the S3 object key from various URL forms:
+ * - https://bucket.endpoint.com/bucket/path/to/file.ogg
+ * - s3://bucket/path/to/file.ogg
+ * - Just the key: path/to/file.ogg
+ */
+function sanitizeKey(fileKey: string, bucketName?: string): string {
+  let key = fileKey;
+
+  // Handle s3:// URLs
+  if (key.startsWith("s3://")) {
+    const withoutScheme = key.replace("s3://", "");
+    // s3://bucket/path -> path
+    key = withoutScheme.split("/").slice(1).join("/");
+  }
+
+  // Strip all leading occurrences of the bucket name prefix
+  if (bucketName) {
+    while (key.startsWith(`${bucketName}/`)) {
+      key = key.slice(bucketName.length + 1);
+    }
+  }
+
+  return key;
+}
+
 export const POST = withSecurity(async (req, user) => {
   try {
     const { fileKey } = await req.json();
@@ -21,16 +47,9 @@ export const POST = withSecurity(async (req, user) => {
       return NextResponse.json({ error: "fileKey is required" }, { status: 400 });
     }
 
-    // Sanitize fileKey: Remove leading bucket name if it was accidentally included
-    let sanitizedKey = fileKey;
     const bucketName = process.env.S3_BUCKET;
-    if (bucketName && sanitizedKey.startsWith(`${bucketName}/`)) {
-      sanitizedKey = sanitizedKey.replace(`${bucketName}/`, "");
-    }
+    const sanitizedKey = sanitizeKey(fileKey, bucketName);
 
-    // SECURITY: Ensure the user has permission to access this file.
-    // For now, we allow all authenticated users, but you can add more checks here.
-    
     const command = new GetObjectCommand({
       Bucket: bucketName,
       Key: sanitizedKey,

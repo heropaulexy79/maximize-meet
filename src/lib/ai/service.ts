@@ -187,15 +187,26 @@ export async function analyzeSession(transcript: string) {
 
 function extractFileKey(url: string) {
   try {
-    const urlObj = new URL(url);
-    let key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
-    
-    // Sanitize: Remove bucket name if it's the first part of the path
-    const bucketName = process.env.S3_BUCKET;
-    if (bucketName && key.startsWith(`${bucketName}/`)) {
-      key = key.replace(`${bucketName}/`, "");
+    let key: string;
+
+    // Handle s3:// protocol
+    if (url.startsWith("s3://")) {
+      const withoutScheme = url.replace("s3://", "");
+      // s3://bucket/path/to/file -> path/to/file
+      key = withoutScheme.split("/").slice(1).join("/");
+    } else {
+      const urlObj = new URL(url);
+      key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
     }
-    
+
+    // Strip ALL leading occurrences of the bucket name
+    const bucketName = process.env.S3_BUCKET;
+    if (bucketName) {
+      while (key.startsWith(`${bucketName}/`)) {
+        key = key.slice(bucketName.length + 1);
+      }
+    }
+
     return key;
   } catch {
     return url;
