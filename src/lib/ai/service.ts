@@ -19,11 +19,15 @@ const s3Client = new S3Client({
  * Transcribes audio using Groq's Whisper implementation.
  * Handles file retrieval from S3 and audio extraction if necessary.
  */
+/**
+ * Transcribes audio using Groq's Whisper implementation.
+ * Handles file retrieval from S3, audio extraction, and chunking for large files.
+ */
 export async function transcribeAudio(fileUrl: string) {
   const tempDir = os.tmpdir();
   const fileKey = extractFileKey(fileUrl);
-  const downloadPath = path.join(tempDir, `session_${Date.now()}.mp4`);
-  const audioPath = path.join(tempDir, `session_${Date.now()}.mp3`);
+  const downloadPath = path.join(tempDir, `session_dl_${Date.now()}.mp4`);
+  const audioPath = path.join(tempDir, `session_full_${Date.now()}.mp3`);
 
   try {
     console.log(`[AI] Downloading recording from S3: ${fileKey}`);
@@ -53,14 +57,72 @@ export async function transcribeAudio(fileUrl: string) {
         .save(audioPath);
     });
 
-    console.log(`[AI] Sending to Groq Whisper...`);
-    const transcription = await groq.audio.transcriptions.create({
-      file: fs.createReadStream(audioPath),
-      model: GROQ_MODELS.TRANSCRIPTION_V3_TURBO,
-      response_format: "verbose_json",
+    const stats = fs.statSync(audioPath);
+    const fileSizeInMB = stats.size / (1024 * 1024);
+    
+    // Groq limit is 25MB. We use 20MB as a safety threshold.
+    if (fileSizeInMB < 20) {
+      console.log(`[AI] Size ${fileSizeInMB.toFixed(2)}MB is within limits. Direct transcription...`);
+      return await groq.audio.transcriptions.create({
+        file: fs.createReadStream(audioPath),
+        model: GROQ_MODELS.TRANSCRIPTION_V3_TURBO,
+        response_format: "verbose_json",
+      });
+    }
+
+    console.log(`[AI] Large file detected (${fileSizeInMB.toFixed(2)}MB). Splitting into chunks...`);
+    const duration: number = await new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(audioPath, (err, metadata) => {
+        if (err) reject(err);
+        else resolve(metadata.format.duration || 0);
+      });
     });
 
-    return transcription;
+    const subTranscripts: any[] = [];
+    const chunkMs = 10 * 60; // 10 minutes
+    const overlapMs = 10; // 10 seconds
+    
+    for (let start = 0; start < duration; start += (chunkMs - overlapMs)) {
+      const chunkPath = path.join(tempDir, `chunk_${start}_${Date.now()}.mp3`);
+      console.log(`[AI] Processing chunk starting at ${start}s...`);
+      
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(audioPath)
+          .setStartTime(start)
+          .setDuration(chunkMs)
+          .on("end", () => resolve())
+          .on("error", (err) => reject(err))
+          .save(chunkPath);
+      });
+
+      const transcription = await groq.audio.transcriptions.create({
+        file: fs.createReadStream(chunkPath),
+        model: GROQ_MODELS.TRANSCRIPTION_V3_TURBO,
+        response_format: "verbose_json",
+      });
+      
+      subTranscripts.push(transcription);
+      fs.unlinkSync(chunkPath);
+    }
+
+    // Merge results
+    console.log(`[AI] Merging ${subTranscripts.length} partial transcripts...`);
+    const mergedText = subTranscripts.map(t => t.text).join(" ");
+    const mergedSegments = subTranscripts.flatMap((t, i) => {
+      const offset = i * (chunkMs - overlapMs);
+      return (t.segments || []).map((s: any) => ({
+        ...s,
+        start: s.start + offset,
+        end: s.end + offset
+      }));
+    });
+
+    return {
+      text: mergedText,
+      segments: mergedSegments,
+      language: subTranscripts[0]?.language || "en"
+    };
+
   } catch (error) {
     console.error("[AI] Transcription error:", error);
     throw error;
