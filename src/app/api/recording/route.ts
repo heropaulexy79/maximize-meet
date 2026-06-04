@@ -5,6 +5,8 @@ import {
 } from "livekit-server-sdk";
 import { EncodedFileOutput, GCPUpload, S3Upload } from "@livekit/protocol";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyAuth, rateLimit } from "@/lib/auth-utils";
+import { withSecurity } from "@/lib/api-wrapper";
 
 const getLiveKitHost = (url: string) => {
   if (!url) return "";
@@ -17,12 +19,11 @@ const egressClient = new EgressClient(
   process.env.LIVEKIT_API_SECRET || ""
 );
 
-export async function POST(req: NextRequest) {
-  try {
-    const { action, roomName, egressId, meetingTitle } = await req.json();
+export const POST = withSecurity(async (req, user) => {
+  const { action, roomName, egressId, meetingTitle } = await req.json();
 
-    // ── START ──────────────────────────────────────────────────────────────
-    if (action === "start") {
+  // ── START ──────────────────────────────────────────────────────────────
+  if (action === "start") {
       if (!roomName) {
         return NextResponse.json(
           { error: "roomName is required" },
@@ -107,11 +108,4 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  } catch (error: any) {
-    console.error("Recording error:", error);
-    return NextResponse.json(
-      { error: error.message || "Recording failed" },   
-      { status: 500 }
-    );
-  }
-}
+}, { requireAdmin: true, rateLimitLimit: 5 });

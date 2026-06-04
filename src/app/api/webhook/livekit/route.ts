@@ -112,33 +112,9 @@ export async function POST(req: NextRequest) {
         // 2. Optimized Thumbnail (Stable Education Theme)
         const thumbnailUrl = `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&q=80&auto=format&fit=crop`;
 
-        // 3. Sanitize fileUrl (fix malformed R2/S3 URLs)
-        if (fileUrl) {
-          console.log("[Vault] Original fileUrl:", fileUrl);
-          
-          const privateHost = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
-          const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
-
-          // 1. Handle nested protocol pattern: bucket.https://domain/path
-          const nestedProtoMatch = fileUrl.match(/^(?:https?:\/\/)?[^/]+\.https?:\/\/(.+)/);
-          if (nestedProtoMatch) {
-            fileUrl = `https://${nestedProtoMatch[1]}`;
-          }
-
-          // 2. Flexible Host Swap: Replace any variant of the private host with public domain
-          if (fileUrl.includes(privateHost)) {
-            // Remove protocol and bucket prefix if it exists before the private host
-            let clean = fileUrl.replace(/^https?:\/\//, "");
-            
-            // Regex to match: [anything.]privateHost and replace with publicHost
-            const hostRegex = new RegExp(`([^/]+\\.)?${privateHost.replace(/\./g, "\\.")}`);
-            clean = clean.replace(hostRegex, publicHost);
-            
-            fileUrl = `https://${clean}`;
-          }
-          
-          console.log("[Vault] Sanitized fileUrl:", fileUrl);
-        }
+        // SECURITY: We no longer sanitize and expose public R2 URLs here.
+        // We store the raw URL/Key and will generate signed URLs on demand in the frontend.
+        console.log("[Vault] Recording saved with location:", fileUrl);
 
         const docRef = adminDb.collection("replays").doc(egressInfo.egressId);
         
@@ -153,7 +129,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        await docRef.set({
+        const replayData = {
           id: egressInfo.egressId,
           roomId: egressInfo.roomName,
           title: title,
@@ -164,10 +140,50 @@ export async function POST(req: NextRequest) {
           fileUrl: fileUrl,
           thumbnail: thumbnailUrl,
           status: egressInfo.status,
-          error: egressInfo.error || null
-        }, { merge: true });
+          error: egressInfo.error || null,
+          processingStatus: "pending", // New field for Knowledge Vault
+          processedAt: null,
+        };
+
+        await docRef.set(replayData, { merge: true });
         
         console.log(`[Vault] Recorded egress_ended for room ${egressInfo.roomName} with title: ${title}`);
+
+        // 3. Trigger Knowledge Vault AI Pipeline (Asynchronous)
+        // We use a promise here but don't await the full processing to avoid webhook timeout.
+        // In a more robust setup, this would be a specialized background worker/queue.
+        (async () => {
+          try {
+            const { transcribeAudio, analyzeSession } = await import("@/lib/ai/service");
+            
+            await docRef.update({ processingStatus: "processing" });
+
+            // A. Transcription
+            const transcriptionResult = await transcribeAudio(fileUrl);
+            const transcript = transcriptionResult.text;
+            const segments = (transcriptionResult as any).segments || [];
+
+            // B. Analysis
+            const analytics = await analyzeSession(transcript);
+
+            // C. Save to Firestore
+            await docRef.update({
+              transcript,
+              transcriptSegments: segments, // Storing segments for timestamped search
+              ...analytics,
+              processingStatus: "completed",
+              processedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+
+            console.log(`[Vault] Knowledge Vault processing COMPLETED for egress ${egressInfo.egressId}`);
+          } catch (error: any) {
+            console.error(`[Vault] Knowledge Vault processing FAILED for egress ${egressInfo.egressId}:`, error);
+            await docRef.update({ 
+              processingStatus: "failed",
+              processingError: error.message 
+            });
+          }
+        })();
       }
     }
 

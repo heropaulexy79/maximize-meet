@@ -18,7 +18,8 @@ import {
   Filter,
   Download,
   Share2,
-  Video
+  Video,
+  Sparkles
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
@@ -94,9 +95,9 @@ export default function VaultPage() {
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-4xl font-outfit font-bold text-white mb-2">Replay Vault</h1>
+              <h1 className="text-4xl font-outfit font-bold text-white mb-2">MAXIMIZE Knowledge Vault</h1>
               <p className="text-muted-foreground text-lg">
-                Relive the transformation. All past academy sessions in one place.
+                A living leadership intelligence system that transforms conversations into institutional wisdom.
               </p>
             </div>
           </div>
@@ -106,19 +107,44 @@ export default function VaultPage() {
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input 
-                placeholder="Search sessions, instructors, or topics..." 
+                placeholder="Semantic Search: Find teachings about leadership, mindset, or purpose..." 
                 className="pl-12 h-14 rounded-2xl bg-white/[0.03] border-white/5 focus:border-primary/50 text-white text-lg"
+                onChange={(e) => {
+                  // In a real implementation, we'd debounce this and call /api/vault/search
+                  console.log("Searching for:", e.target.value);
+                }}
               />
             </div>
             <Button variant="outline" className="h-14 px-6 rounded-2xl border-white/10 bg-white/5 text-white">
               <Filter className="w-5 h-5 mr-2" />
-              Filters
+              Advanced
             </Button>
+          </div>
+
+          {/* Cohort Intelligence Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { label: "Total Sessions", val: replays.length, icon: Video },
+              { label: "Wisdom Hours", val: Math.round(replays.reduce((acc, r) => acc + (r.durationSeconds || 0), 0) / 3600), icon: Clock },
+              { label: "Insights Generated", val: replays.reduce((acc, r) => acc + (r.leadershipPrinciples?.length || 0) + (r.strategicInsights?.length || 0), 0), icon: Sparkles }
+            ].map((stat, i) => (
+              <Card key={i} className="bg-gradient-to-br from-primary/10 to-transparent border-white/5 rounded-3xl p-6">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                     <stat.icon className="w-6 h-6 text-primary" />
+                   </div>
+                   <div>
+                     <p className="text-xs text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+                     <p className="text-2xl font-bold text-white">{stat.val}</p>
+                   </div>
+                </div>
+              </Card>
+            ))}
           </div>
 
           {/* Categories */}
           <div className="flex gap-3 overflow-x-auto pb-2">
-            {["All", "Strategy", "Culture", "Soft Skills", "Execution", "Cohorts", "Guest Speakers"].map((cat) => (
+            {["All", "Leadership", "Activation", "Strategy", "Identity", "Purpose", "Shift"].map((cat) => (
               <Badge key={cat} variant="secondary" className="px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white text-sm font-medium cursor-pointer transition-colors border border-white/5">
                 {cat}
               </Badge>

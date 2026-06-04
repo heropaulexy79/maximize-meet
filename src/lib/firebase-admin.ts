@@ -6,12 +6,6 @@ if (!admin.apps.length) {
     const credentialEnv = process.env.GCP_CREDENTIALS;
     const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
     
-    console.log("📡 GCP_CREDENTIALS present:", !!credentialEnv);
-    if (credentialEnv) {
-      console.log("📡 GCP_CREDENTIALS length:", credentialEnv.length);
-      console.log("📡 GCP_CREDENTIALS starts with:", credentialEnv.trim().substring(0, 10));
-    }
-
     if (credentialEnv && 
         credentialEnv.trim() !== "" && 
         credentialEnv !== "paste-your-service-account-json-here") {

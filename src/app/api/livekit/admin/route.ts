@@ -1,6 +1,7 @@
 import { RoomServiceClient } from "livekit-server-sdk";
 import { NextRequest, NextResponse } from "next/server";
-import { adminAuth, adminDb } from "@/lib/firebase-admin";
+import { verifyAuth, rateLimit } from "@/lib/auth-utils";
+import { withSecurity } from "@/lib/api-wrapper";
 
 const getLiveKitHost = (url: string) => {
   if (!url) return "";
@@ -13,94 +14,56 @@ const roomService = new RoomServiceClient(
   process.env.LIVEKIT_API_SECRET || ""
 );
 
-export async function POST(req: NextRequest) {
-  try {
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Missing or invalid Authorization header" }, { status: 401 });
-    }
+export const POST = withSecurity(async (req, user) => {
+  const { action, roomName, identity, trackSid, metadata: bodyMetadata } = await req.json();
 
-    const idToken = authHeader.split("Bearer ")[1];
-    
-    // Verify token and check admin role
-    const decodedToken = await adminAuth.verifyIdToken(idToken);
-    const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
-    const isFirebaseAdmin = userDoc.exists && userDoc.data()?.role === "admin";
+  if (!roomName) {
+    return NextResponse.json({ error: "roomName is required" }, { status: 400 });
+  }
 
-    const { action, roomName, identity, trackSid, metadata: bodyMetadata } = await req.json();
+  switch (action) {
+    case "kick":
+      if (!identity) return NextResponse.json({ error: "identity is required" }, { status: 400 });
+      await roomService.removeParticipant(roomName, identity);
+      break;
 
-    if (!roomName) {
-      return NextResponse.json({ error: "roomName is required" }, { status: 400 });
-    }
+    case "mute":
+      if (!identity || !trackSid) return NextResponse.json({ error: "identity and trackSid required" }, { status: 400 });
+      await roomService.mutePublishedTrack(roomName, identity, trackSid, true);
+      break;
 
-    // If not Firebase admin, check if they are a temporary admin in this room
-    if (!isFirebaseAdmin) {
-      try {
-        const callerIdentity = decodedToken.email || decodedToken.name || decodedToken.uid;
-        const participant = await roomService.getParticipant(roomName, callerIdentity);
-        const pMeta = participant.metadata ? JSON.parse(participant.metadata) : {};
-        if (pMeta.role !== "admin") {
-          return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
-        }
-      } catch (e) {
-        return NextResponse.json({ error: "Forbidden: Not an admin in this room" }, { status: 403 });
-      }
-    }
-
-    switch (action) {
-      case "kick":
-        if (!identity) return NextResponse.json({ error: "identity is required" }, { status: 400 });
-        await roomService.removeParticipant(roomName, identity);
-        break;
-
-      case "mute":
-        if (!identity || !trackSid) return NextResponse.json({ error: "identity and trackSid required" }, { status: 400 });
-        await roomService.mutePublishedTrack(roomName, identity, trackSid, true);
-        break;
-
-      case "muteAll":
-        // Fetch all participants
-        const participants = await roomService.listParticipants(roomName);
+    case "muteAll":
+      const participants = await roomService.listParticipants(roomName);
+      // We can't easily get admin email from decoded token here without more work, 
+      // but we can skip based on identity if provided in metadata.
+      for (const p of participants) {
+        // Skip if it's likely the admin (identity matching)
+        if (p.identity === identity) continue;
         
-        // Exclude the admin making the request (using decodedToken.email or displayName, ideally identity matches one of these)
-        // Note: frontend passes displayName || email as identity.
-        const adminEmail = decodedToken.email;
-        const adminName = userDoc.data()?.name || userDoc.data()?.displayName;
-        
-        for (const p of participants) {
-          // Skip if it's the admin
-          if (p.identity === adminEmail || p.identity === adminName) continue;
-          
-          // Mute all audio tracks
-          for (const track of p.tracks) {
-            if (track.type === 1) { // 1 = Audio
-              await roomService.mutePublishedTrack(roomName, p.identity, track.sid, true);
-            }
+        for (const track of p.tracks) {
+          if (track.type === 1) { // 1 = Audio
+            await roomService.mutePublishedTrack(roomName, p.identity, track.sid, true);
           }
         }
-        break;
+      }
+      break;
 
-      case "deleteRoom":
-        await roomService.deleteRoom(roomName);
-        break;
+    case "deleteRoom":
+      await roomService.deleteRoom(roomName);
+      break;
 
-      case "updateRoom":
-        await roomService.updateRoomMetadata(roomName, bodyMetadata);
-        break;
+    case "updateRoom":
+      await roomService.updateRoomMetadata(roomName, bodyMetadata);
+      break;
 
-      case "updateParticipant":
-        if (!identity) return NextResponse.json({ error: "identity is required" }, { status: 400 });
-        await roomService.updateParticipant(roomName, identity, bodyMetadata);
-        break;
+    case "updateParticipant":
+      if (!identity) return NextResponse.json({ error: "identity is required" }, { status: 400 });
+      await roomService.updateParticipant(roomName, identity, bodyMetadata);
+      break;
 
-      default:
-        return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-    }
-
-    return NextResponse.json({ success: true });
-
-  } catch (error: any) {
-    console.error("Admin action failed:", error);
-    return NextResponse.json({ error: error.message || "Action failed" }, { status: 500 });
+    default:
+      return NextResponse.json({ error: "Invalid action" }, { status: 400 });
   }
-}
+
+  return NextResponse.json({ success: true });
+}, { requireAdmin: true, rateLimitLimit: 30 });

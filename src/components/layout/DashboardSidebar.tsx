@@ -27,8 +27,9 @@ import { Button } from "@/components/ui/button";
 const menuItems = [
   { icon: LayoutDashboard, label: "Overview", href: "/dashboard", adminOnly: false },
   { icon: Video, label: "Sessions", href: "/dashboard/sessions", adminOnly: false },
+  { icon: BookOpen, label: "Knowledge Vault", href: "/vault", adminOnly: false },
+  { icon: ShieldCheck, label: "Admin Vault", href: "/dashboard/vault", adminOnly: true },
   { icon: Users, label: "Attendance", href: "/dashboard/attendance", adminOnly: true },
-  { icon: BookOpen, label: "Vault", href: "/vault", adminOnly: false },
 ];
 
 export function DashboardSidebar() {
