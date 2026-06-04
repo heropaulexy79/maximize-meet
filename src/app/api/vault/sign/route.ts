@@ -21,12 +21,19 @@ export const POST = withSecurity(async (req, user) => {
       return NextResponse.json({ error: "fileKey is required" }, { status: 400 });
     }
 
+    // Sanitize fileKey: Remove leading bucket name if it was accidentally included
+    let sanitizedKey = fileKey;
+    const bucketName = process.env.S3_BUCKET;
+    if (bucketName && sanitizedKey.startsWith(`${bucketName}/`)) {
+      sanitizedKey = sanitizedKey.replace(`${bucketName}/`, "");
+    }
+
     // SECURITY: Ensure the user has permission to access this file.
     // For now, we allow all authenticated users, but you can add more checks here.
     
     const command = new GetObjectCommand({
-      Bucket: process.env.S3_BUCKET,
-      Key: fileKey,
+      Bucket: bucketName,
+      Key: sanitizedKey,
     });
 
     // Generate a signed URL that expires in 15 minutes (900 seconds)
