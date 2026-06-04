@@ -152,41 +152,20 @@ export async function POST(req: NextRequest) {
         
         console.log(`[Vault] Recorded egress_ended for room ${egressInfo.roomName} with title: ${title}`);
 
-        // 3. Trigger Knowledge Vault AI Pipeline (Asynchronous)
-        // We use a promise here but don't await the full processing to avoid webhook timeout.
-        // In a more robust setup, this would be a specialized background worker/queue.
-        (async () => {
-          try {
-            const { transcribeAudio, analyzeSession } = await import("@/lib/ai/service");
-            
-            await docRef.update({ processingStatus: "processing" });
-
-            // A. Transcription
-            const transcriptionResult = await transcribeAudio(fileUrl);
-            const transcript = transcriptionResult.text;
-            const segments = (transcriptionResult as any).segments || [];
-
-            // B. Analysis
-            const analytics = await analyzeSession(transcript);
-
-            // C. Save to Firestore
-            await docRef.update({
-              transcript,
-              transcriptSegments: segments, // Storing segments for timestamped search
-              ...analytics,
-              processingStatus: "completed",
-              processedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-
-            console.log(`[Vault] Knowledge Vault processing COMPLETED for egress ${egressInfo.egressId}`);
-          } catch (error: any) {
-            console.error(`[Vault] Knowledge Vault processing FAILED for egress ${egressInfo.egressId}:`, error);
-            await docRef.update({ 
-              processingStatus: "failed",
-              processingError: error.message 
-            });
-          }
-        })();
+        // 3. Trigger Knowledge Vault AI Pipeline
+        // We fire a real HTTP request to a dedicated route so it runs in its own
+        // serverless invocation (maxDuration=300) and isn't killed when we return here.
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        fetch(`${appUrl}/api/vault/process`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
+          },
+          body: JSON.stringify({ egressId: egressInfo.egressId }),
+        }).catch((err) =>
+          console.error(`[Vault] Failed to trigger /api/vault/process for ${egressInfo.egressId}:`, err)
+        );
       }
     }
 
