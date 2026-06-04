@@ -39,10 +39,12 @@ export function withSecurity(
       const user = await verifyAuth(req);
 
       if (options.requireAuth && !user) {
+        console.warn(`[Security] Unauthorized access attempt to ${req.nextUrl.pathname}`);
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
 
       if (options.requireAdmin && user?.role !== "admin") {
+        console.warn(`[Security] Forbidden: Admin access required for ${req.nextUrl.pathname}. User role: ${user?.role}`);
         return NextResponse.json({ error: "Forbidden: Admin access required" }, { status: 403 });
       }
 

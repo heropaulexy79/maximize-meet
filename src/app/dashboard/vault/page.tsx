@@ -25,8 +25,10 @@ import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 export default function AdminVaultPage() {
+  const { user } = useAuth();
   const [replays, setReplays] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,9 +48,13 @@ export default function AdminVaultPage() {
 
   const handleReprocess = async (id: string) => {
     try {
+      const idToken = await user?.getIdToken();
       const res = await fetch(`/api/admin/vault/reprocess`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
         body: JSON.stringify({ egressId: id })
       });
       

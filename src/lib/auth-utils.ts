@@ -22,10 +22,13 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
     const userDoc = await adminDb.collection("users").doc(decodedToken.uid).get();
     const userData = userDoc.data();
     
+    // Support both Custom Claims and Firestore-based roles
+    const role = (decodedToken.role === "admin" || userData?.role === "admin") ? "admin" : "member";
+
     return {
       uid: decodedToken.uid,
       email: decodedToken.email,
-      role: (userData?.role === "admin") ? "admin" : "member",
+      role: role as "admin" | "member",
     };
   } catch (error) {
     console.error("Auth verification failed:", error);
