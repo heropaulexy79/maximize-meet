@@ -194,9 +194,13 @@ function extractFileKey(url: string) {
       const withoutScheme = url.replace("s3://", "");
       // s3://bucket/path/to/file -> path/to/file
       key = withoutScheme.split("/").slice(1).join("/");
-    } else {
+    } else if (url.startsWith("https://") || url.startsWith("http://")) {
+      // Handle full HTTPS URLs (e.g. R2 public or path-style URLs)
       const urlObj = new URL(url);
       key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
+    } else {
+      // Already a plain key like "recordings/file.ogg"
+      key = url;
     }
 
     // Strip ALL leading occurrences of the bucket name

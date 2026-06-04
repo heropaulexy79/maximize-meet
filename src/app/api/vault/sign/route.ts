@@ -4,9 +4,11 @@ import { NextResponse } from "next/server";
 import { withSecurity } from "@/lib/api-wrapper";
 
 // S3 Client configuration
+// forcePathStyle is required for Cloudflare R2 presigned URL generation
 const s3Client = new S3Client({
   region: process.env.S3_REGION || "auto",
   endpoint: process.env.S3_ENDPOINT,
+  forcePathStyle: true,
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY || "",
     secretAccessKey: process.env.S3_SECRET_KEY || "",
@@ -15,12 +17,24 @@ const s3Client = new S3Client({
 
 /**
  * Extracts and sanitizes the S3 object key from various URL forms:
- * - https://bucket.endpoint.com/bucket/path/to/file.ogg
+ * - https://account.r2.cloudflarestorage.com/bucket/path/to/file.ogg  (path-style)
+ * - https://bucket.account.r2.cloudflarestorage.com/path/to/file.ogg  (virtual-hosted)
  * - s3://bucket/path/to/file.ogg
- * - Just the key: path/to/file.ogg
+ * - Just the key: path/to/file.ogg or recordings/file.ogg
  */
 function sanitizeKey(fileKey: string, bucketName?: string): string {
   let key = fileKey;
+
+  // Handle full https:// URLs — extract just the pathname
+  if (key.startsWith("https://") || key.startsWith("http://")) {
+    try {
+      const urlObj = new URL(key);
+      // pathname starts with "/" — remove it
+      key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
+    } catch {
+      // not a valid URL, use as-is
+    }
+  }
 
   // Handle s3:// URLs
   if (key.startsWith("s3://")) {
@@ -29,7 +43,8 @@ function sanitizeKey(fileKey: string, bucketName?: string): string {
     key = withoutScheme.split("/").slice(1).join("/");
   }
 
-  // Strip all leading occurrences of the bucket name prefix
+  // Strip ALL leading occurrences of the bucket name prefix
+  // (handles both path-style where bucket is in the path, and any double-prefix)
   if (bucketName) {
     while (key.startsWith(`${bucketName}/`)) {
       key = key.slice(bucketName.length + 1);
