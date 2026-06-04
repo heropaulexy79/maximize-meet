@@ -40,6 +40,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 export default function SessionDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [signedUrl, setSignedUrl] = useState<string>("");
@@ -63,7 +64,7 @@ export default function SessionDetailPage() {
 
   useEffect(() => {
     const fetchSession = async () => {
-      if (!id) return;
+      if (!id || !user) return;
       try {
         const docRef = doc(db, "replays", id as string);
         const snapshot = await getDoc(docRef);
@@ -72,9 +73,13 @@ export default function SessionDetailPage() {
           setSession(data);
           
           if (data.fileUrl) {
+            const idToken = await user.getIdToken();
             const res = await fetch("/api/vault/sign", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${idToken}`
+              },
               body: JSON.stringify({ fileKey: extractFileKey(data.fileUrl) })
             });
             const { url } = await res.json();
@@ -89,7 +94,7 @@ export default function SessionDetailPage() {
     };
 
     fetchSession();
-  }, [id, extractFileKey]);
+  }, [id, user, extractFileKey]);
 
   const formattedDate = useMemo(() => {
     if (!session?.date) return "Unknown";

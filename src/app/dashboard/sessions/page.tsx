@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { useAuth } from "@/context/AuthContext";
 
 interface SessionData {
   id: string;
@@ -36,13 +37,17 @@ interface SessionData {
 }
 
 export default function SessionsPage() {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchSessions = async () => {
       try {
-        const res = await fetch("/api/sessions");
+        const idToken = await user?.getIdToken();
+        const res = await fetch("/api/sessions", {
+          headers: { "Authorization": `Bearer ${idToken}` }
+        });
         const data = await res.json();
         if (data.sessions) {
           setSessions(data.sessions);
@@ -54,8 +59,12 @@ export default function SessionsPage() {
       }
     };
 
-    fetchSessions();
-  }, []);
+    if (user) {
+      fetchSessions();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   return (
     <div className="flex min-h-screen bg-black">

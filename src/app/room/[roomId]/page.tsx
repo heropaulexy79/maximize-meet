@@ -564,7 +564,10 @@ export default function RoomPage() {
   useEffect(() => {
     const fetchSessionInfo = async () => {
       try {
-        const res = await fetch("/api/sessions");
+        const idToken = await user?.getIdToken();
+        const res = await fetch("/api/sessions", {
+          headers: idToken ? { "Authorization": `Bearer ${idToken}` } : {}
+        });
         const data = await res.json();
         if (data.sessions) {
           const session = data.sessions.find((s: any) => s.roomId === roomId);
@@ -943,7 +946,9 @@ function RoomContextWrapper({
       let activeTitle = meetingTitle;
       if (!activeTitle) {
         try {
-          const sRes = await fetch("/api/sessions");
+          const sRes = await fetch("/api/sessions", {
+            headers: { "Authorization": `Bearer ${idToken}` }
+          });
           const sData = await sRes.json();
           const session = sData.sessions?.find((s: any) => s.roomId === roomId);
           if (session) activeTitle = session.title;
@@ -957,7 +962,10 @@ function RoomContextWrapper({
       if (newState) {
         const recRes = await fetch("/api/recording", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${idToken}`
+          },
           body: JSON.stringify({ 
             action: "start", 
             roomName: roomId,
@@ -979,7 +987,10 @@ function RoomContextWrapper({
         if (currentEgressId) {
           const stopRes = await fetch("/api/recording", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${idToken}`
+            },
             body: JSON.stringify({ action: "stop", egressId: currentEgressId })
           });
           if (!stopRes.ok) {

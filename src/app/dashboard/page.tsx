@@ -55,7 +55,9 @@ export default function DashboardPage() {
         const idToken = await user?.getIdToken();
         
         // 1. Fetch Sessions
-        const sRes = await fetch("/api/sessions");
+        const sRes = await fetch("/api/sessions", {
+          headers: { "Authorization": `Bearer ${idToken}` }
+        });
         const sData = await sRes.json();
         if (sData.sessions) {
           setSessions(sData.sessions.slice(0, 4));
