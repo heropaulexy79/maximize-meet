@@ -114,13 +114,18 @@ export async function analyzeSession(transcript: string) {
 }
 
 function extractFileKey(url: string) {
-  // Logic to get the key from R2 URL
-  // Example URL: https://bucket.endpoint.com/path/to/file.mp4
-  // Or: bucket.https://domain.com/path
   try {
     const urlObj = new URL(url);
-    return urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
+    let key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
+    
+    // Sanitize: Remove bucket name if it's the first part of the path
+    const bucketName = process.env.S3_BUCKET;
+    if (bucketName && key.startsWith(`${bucketName}/`)) {
+      key = key.replace(`${bucketName}/`, "");
+    }
+    
+    return key;
   } catch {
-    return url; // Fallback
+    return url;
   }
 }
