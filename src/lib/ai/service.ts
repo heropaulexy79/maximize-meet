@@ -78,39 +78,49 @@ export async function transcribeAudio(fileUrl: string) {
       });
     });
 
-    const subTranscripts: any[] = [];
     const chunkMs = 10 * 60; // 10 minutes
     const overlapMs = 10; // 10 seconds
+    const chunkPromises: Promise<any>[] = [];
     
     for (let start = 0; start < duration; start += (chunkMs - overlapMs)) {
-      const chunkPath = path.join(tempDir, `chunk_${start}_${Date.now()}.mp3`);
-      console.log(`[AI] Processing chunk starting at ${start}s...`);
-      
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(audioPath)
-          .setStartTime(start)
-          .setDuration(chunkMs)
-          .on("end", () => resolve())
-          .on("error", (err) => reject(err))
-          .save(chunkPath);
-      });
+      chunkPromises.push((async () => {
+        const chunkPath = path.join(tempDir, `chunk_${start}_${Date.now()}.mp3`);
+        const currentStart = start;
+        console.log(`[AI] Processing chunk starting at ${currentStart}s...`);
+        
+        await new Promise<void>((resolve, reject) => {
+          ffmpeg(audioPath)
+            .setStartTime(currentStart)
+            .setDuration(chunkMs)
+            .on("end", () => resolve())
+            .on("error", (err) => reject(err))
+            .save(chunkPath);
+        });
 
-      const transcription = await groq.audio.transcriptions.create({
-        file: fs.createReadStream(chunkPath),
-        model: GROQ_MODELS.TRANSCRIPTION_V3_TURBO,
-        response_format: "verbose_json",
-      });
-      
-      subTranscripts.push(transcription);
-      fs.unlinkSync(chunkPath);
+        try {
+          const transcription = await groq.audio.transcriptions.create({
+            file: fs.createReadStream(chunkPath),
+            model: GROQ_MODELS.TRANSCRIPTION_V3_TURBO,
+            response_format: "verbose_json",
+          });
+          return { transcription, offset: currentStart };
+        } finally {
+          if (fs.existsSync(chunkPath)) fs.unlinkSync(chunkPath);
+        }
+      })());
     }
+
+    const results = await Promise.all(chunkPromises);
+    // Sort results by offset to ensure correct order
+    results.sort((a, b) => a.offset - b.offset);
+    const subTranscripts = results.map(r => r.transcription);
 
     // Merge results
     console.log(`[AI] Merging ${subTranscripts.length} partial transcripts...`);
     const mergedText = subTranscripts.map(t => t.text).join(" ");
-    const mergedSegments = subTranscripts.flatMap((t, i) => {
-      const offset = i * (chunkMs - overlapMs);
-      return (t.segments || []).map((s: any) => ({
+    const mergedSegments = results.flatMap((res, i) => {
+      const offset = res.offset;
+      return (res.transcription.segments || []).map((s: any) => ({
         ...s,
         start: s.start + offset,
         end: s.end + offset

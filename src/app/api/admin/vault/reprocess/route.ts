@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { withSecurity } from "@/lib/api-wrapper";
 import * as admin from "firebase-admin";
 
+// Allow this serverless function to run for up to 300 seconds (Vercel max)
+export const maxDuration = 300;
+
 export const POST = withSecurity(async (req, user) => {
   try {
     const { egressId } = await req.json();

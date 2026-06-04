@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebase-admin";
 import * as admin from "firebase-admin";
 
+// Allow this serverless function to run for up to 300 seconds (Vercel max)
+export const maxDuration = 300;
+
 const receiver = new WebhookReceiver(
   process.env.LIVEKIT_API_KEY || "",
   process.env.LIVEKIT_API_SECRET || ""
