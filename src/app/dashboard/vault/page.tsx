@@ -61,7 +61,8 @@ export default function AdminVaultPage() {
       if (res.ok) {
         toast.success("Reprocessing task queued");
       } else {
-        toast.error("Failed to queue reprocessing");
+        const data = await res.json();
+        toast.error(data.error || "Failed to queue reprocessing");
       }
     } catch (error) {
       toast.error("Error triggering reprocessing");

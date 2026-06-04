@@ -8,21 +8,21 @@ export const POST = withSecurity(async (req, user) => {
     const { egressId } = await req.json();
 
     if (!egressId) {
-      return NextResponse.json({ error: "egressId is required" }, { status: 400 });
+      return NextResponse.json({ error: "Missing egressId in request body" }, { status: 400 });
     }
 
     const docRef = adminDb.collection("replays").doc(egressId);
     const snapshot = await docRef.get();
 
     if (!snapshot.exists) {
-      return NextResponse.json({ error: "Replay not found" }, { status: 404 });
+      return NextResponse.json({ error: `Replay not found for ID: ${egressId}` }, { status: 404 });
     }
 
     const data = snapshot.data();
     const fileUrl = data?.fileUrl;
 
     if (!fileUrl) {
-      return NextResponse.json({ error: "No file URL found for this replay" }, { status: 400 });
+      return NextResponse.json({ error: `No recording file URL found for replay: ${egressId}` }, { status: 400 });
     }
 
     // Trigger Knowledge Vault AI Pipeline (Asynchronous)
