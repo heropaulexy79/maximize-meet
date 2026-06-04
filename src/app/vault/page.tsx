@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { motion } from "framer-motion";
 import { 
@@ -57,21 +57,15 @@ export default function VaultPage() {
     const privateHost = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
     const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
 
-    // 1. Handle nested protocol pattern: bucket.https://domain/path
     const nestedProtoMatch = fileUrl.match(/^(?:https?:\/\/)?[^/]+\.https?:\/\/(.+)/);
     if (nestedProtoMatch) {
       fileUrl = `https://${nestedProtoMatch[1]}`;
     }
 
-    // 2. Flexible Host Swap: Replace any variant of the private host with public domain
     if (fileUrl.includes(privateHost)) {
-      // Remove protocol
       let clean = fileUrl.replace(/^https?:\/\//, "");
-      
-      // Regex to match: [anything.]privateHost and replace with publicHost
       const hostRegex = new RegExp(`([^/]+\\.)?${privateHost.replace(/\./g, "\\.")}`);
       clean = clean.replace(hostRegex, publicHost);
-      
       fileUrl = `https://${clean}`;
     }
     
@@ -85,6 +79,15 @@ export default function VaultPage() {
     if (h > 0) return `${h}h ${m}m`;
     return `${m}m`;
   };
+
+  const memoizedReplays = useMemo(() => {
+    return replays.map(replay => ({
+      ...replay,
+      formattedDuration: formatDuration(replay.durationSeconds),
+      sanitizedFileUrl: sanitizeUrl(replay.fileUrl),
+      formattedDate: replay.date ? format(replay.date.toDate(), "MMM d, yyyy") : "Unknown"
+    }));
+  }, [replays]);
 
   return (
     <div className="flex min-h-screen bg-black">
@@ -110,7 +113,6 @@ export default function VaultPage() {
                 placeholder="Semantic Search: Find teachings about leadership, mindset, or purpose..." 
                 className="pl-12 h-14 rounded-2xl bg-white/[0.03] border-white/5 focus:border-primary/50 text-white text-lg"
                 onChange={(e) => {
-                  // In a real implementation, we'd debounce this and call /api/vault/search
                   console.log("Searching for:", e.target.value);
                 }}
               />
@@ -123,29 +125,45 @@ export default function VaultPage() {
 
           {/* Cohort Intelligence Overview */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { label: "Total Sessions", val: replays.length, icon: Video },
-              { label: "Wisdom Hours", val: Math.round(replays.reduce((acc, r) => acc + (r.durationSeconds || 0), 0) / 3600), icon: Clock },
-              { label: "Insights Generated", val: replays.reduce((acc, r) => acc + (r.leadershipPrinciples?.length || 0) + (r.strategicInsights?.length || 0), 0), icon: Sparkles }
-            ].map((stat, i) => (
-              <Card key={i} className="bg-gradient-to-br from-primary/10 to-transparent border-white/5 rounded-3xl p-6">
-                <div className="flex items-center gap-4">
-                   <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
-                     <stat.icon className="w-6 h-6 text-primary" />
-                   </div>
-                   <div>
-                     <p className="text-xs text-muted-foreground uppercase tracking-widest">{stat.label}</p>
-                     <p className="text-2xl font-bold text-white">{stat.val}</p>
-                   </div>
-                </div>
-              </Card>
-            ))}
+            <Card className="bg-gradient-to-br from-primary/10 to-transparent border-white/5 rounded-3xl p-6">
+              <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                   <Video className="w-6 h-6 text-primary" />
+                 </div>
+                 <div>
+                   <p className="text-xs text-muted-foreground uppercase tracking-widest">Total Sessions</p>
+                   <p className="text-2xl font-bold text-white">{replays.length}</p>
+                 </div>
+              </div>
+            </Card>
+            <Card className="bg-gradient-to-br from-primary/10 to-transparent border-white/5 rounded-3xl p-6">
+              <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                   <Clock className="w-6 h-6 text-primary" />
+                 </div>
+                 <div>
+                   <p className="text-xs text-muted-foreground uppercase tracking-widest">Wisdom Hours</p>
+                   <p className="text-2xl font-bold text-white">{Math.round(replays.reduce((acc, r) => acc + (r.durationSeconds || 0), 0) / 3600)}</p>
+                 </div>
+              </div>
+            </Card>
+            <Card className="bg-gradient-to-br from-primary/10 to-transparent border-white/5 rounded-3xl p-6">
+              <div className="flex items-center gap-4">
+                 <div className="w-12 h-12 rounded-2xl bg-primary/20 flex items-center justify-center">
+                   <Sparkles className="w-6 h-6 text-primary" />
+                 </div>
+                 <div>
+                   <p className="text-xs text-muted-foreground uppercase tracking-widest">Insights Generated</p>
+                   <p className="text-2xl font-bold text-white">{replays.reduce((acc, r) => acc + (r.leadershipPrinciples?.length || 0) + (r.strategicInsights?.length || 0), 0)}</p>
+                 </div>
+              </div>
+            </Card>
           </div>
 
           {/* Categories */}
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <div className="flex gap-3 overflow-x-auto pb-2 shrink-0">
             {["All", "Leadership", "Activation", "Strategy", "Identity", "Purpose", "Shift"].map((cat) => (
-              <Badge key={cat} variant="secondary" className="px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white text-sm font-medium cursor-pointer transition-colors border border-white/5">
+              <Badge key={cat} variant="secondary" className="px-5 py-2 rounded-full bg-white/5 hover:bg-white/10 text-white text-sm font-medium cursor-pointer transition-colors border border-white/5 whitespace-nowrap">
                 {cat}
               </Badge>
             ))}
@@ -157,7 +175,7 @@ export default function VaultPage() {
                <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
                <p className="text-muted-foreground">Loading vault...</p>
              </div>
-          ) : replays.length === 0 ? (
+          ) : memoizedReplays.length === 0 ? (
              <div className="flex flex-col items-center justify-center py-20 bg-white/[0.02] border border-white/5 rounded-[2.5rem]">
                <Video className="w-16 h-16 text-muted-foreground/30 mb-4" />
                <h3 className="text-xl font-bold text-white mb-2">No Replays Yet</h3>
@@ -165,13 +183,15 @@ export default function VaultPage() {
              </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {replays.map((replay, idx) => (
+              {memoizedReplays.map((replay, idx) => (
                 <motion.div
                   key={replay.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  whileHover={{ y: -5 }}
+                  transition={{ 
+                    duration: 0.3,
+                    delay: idx < 6 ? idx * 0.05 : 0 
+                  }}
                   className="group"
                 >
                   <Card className="bg-white/[0.02] border-white/5 rounded-[2.5rem] overflow-hidden group-hover:bg-white/[0.04] transition-all duration-300">
@@ -179,11 +199,12 @@ export default function VaultPage() {
                       <img 
                         src={replay.thumbnail || "https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=1000"} 
                         alt={replay.title} 
+                        loading="lazy"
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
                       
-                      <Link href={`/vault/${replay.id}`} className="absolute inset-0 flex items-center justify-center z-10">
+                      <Link href={`/vault/${replay.id}`} className="absolute inset-0 flex items-center justify-center z-10 focus:outline-none">
                         <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all duration-300 shadow-xl shadow-primary/40 cursor-pointer">
                           <Play className="w-8 h-8 text-white fill-white ml-1" />
                         </div>
@@ -193,38 +214,38 @@ export default function VaultPage() {
                         {replay.category || "Session"}
                       </Badge>
                       
-                      {replay.status !== 3 && (
+                      {replay.processingStatus && replay.processingStatus !== 'completed' && (
                         <Badge className="absolute top-4 right-4 bg-amber-500/20 text-amber-400 border-amber-500/20 rounded-full px-3 py-1 z-10">
-                          Processing
+                          {replay.processingStatus === 'processing' ? 'Processing Intelligence' : 'Queued'}
                         </Badge>
                       )}
                     </div>
                     <CardContent className="p-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-widest">
+                      <div className="flex items-center justify-between mb-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                        <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
-                          {replay.date ? format(replay.date.toDate(), "MMM d, yyyy") : "Unknown"}
+                          {replay.formattedDate}
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground uppercase tracking-widest">
+                        <div className="flex items-center gap-2">
                           <Clock className="w-4 h-4" />
-                          {formatDuration(replay.durationSeconds)}
+                          {replay.formattedDuration}
                         </div>
                       </div>
                       <Link href={`/vault/${replay.id}`}>
-                        <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-primary transition-colors leading-tight cursor-pointer">
+                        <h3 className="text-2xl font-bold text-white mb-2 group-hover:text-primary transition-colors leading-tight cursor-pointer line-clamp-1">
                           {replay.title}
                         </h3>
                       </Link>
-                      <p className="text-muted-foreground mb-8">Led by {replay.instructor || "Instructor"}</p>
+                      <p className="text-muted-foreground mb-8 line-clamp-1">Led by {replay.instructor || "Instructor"}</p>
                       
                       <div className="flex gap-4">
                         <Link href={`/vault/${replay.id}`} className="flex-1">
-                          <Button className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-medium">
-                            Watch Replay
+                          <Button className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold active:scale-95 transition-transform">
+                            Enter Wisdom Vault
                           </Button>
                         </Link>
                         {replay.fileUrl && (
-                          <Button variant="outline" size="icon" onClick={() => window.open(sanitizeUrl(replay.fileUrl), '_blank')} className="h-12 w-12 rounded-xl border-white/10 bg-white/5 text-white shrink-0">
+                          <Button variant="outline" size="icon" onClick={() => window.open(replay.sanitizedFileUrl, '_blank')} className="h-12 w-12 rounded-xl border-white/10 bg-white/5 text-white shrink-0 active:scale-95 transition-transform">
                             <Download className="w-5 h-5" />
                           </Button>
                         )}

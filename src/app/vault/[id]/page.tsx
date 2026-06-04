@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { DashboardSidebar } from "@/components/layout/DashboardSidebar";
 import { motion, AnimatePresence } from "framer-motion";
@@ -44,6 +44,23 @@ export default function SessionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [signedUrl, setSignedUrl] = useState<string>("");
 
+  const extractFileKey = useCallback((url: string) => {
+    try {
+      const urlObj = new URL(url);
+      return urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
+    } catch {
+      return url;
+    }
+  }, []);
+
+  const formatDuration = useCallback((seconds: number) => {
+    if (!seconds) return "0m";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
+  }, []);
+
   useEffect(() => {
     const fetchSession = async () => {
       if (!id) return;
@@ -54,7 +71,6 @@ export default function SessionDetailPage() {
           const data = snapshot.data();
           setSession(data);
           
-          // Fetch signed URL for the video
           if (data.fileUrl) {
             const res = await fetch("/api/vault/sign", {
               method: "POST",
@@ -73,24 +89,16 @@ export default function SessionDetailPage() {
     };
 
     fetchSession();
-  }, [id]);
+  }, [id, extractFileKey]);
 
-  const extractFileKey = (url: string) => {
-    try {
-      const urlObj = new URL(url);
-      return urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
-    } catch {
-      return url;
-    }
-  };
+  const formattedDate = useMemo(() => {
+    if (!session?.date) return "Unknown";
+    return format(session.date.toDate(), "MMMM d, yyyy");
+  }, [session?.date]);
 
-  const formatDuration = (seconds: number) => {
-    if (!seconds) return "0m";
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    if (h > 0) return `${h}h ${m}m`;
-    return `${m}m`;
-  };
+  const duration = useMemo(() => {
+    return formatDuration(session?.durationSeconds);
+  }, [session?.durationSeconds, formatDuration]);
 
   if (loading) {
     return (
@@ -121,18 +129,18 @@ export default function SessionDetailPage() {
           <div className="flex items-center justify-between">
             <Button 
               variant="ghost" 
-              className="text-muted-foreground hover:text-white"
+              className="text-muted-foreground hover:text-white active:scale-95 transition-transform"
               onClick={() => router.back()}
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               Back to Vault
             </Button>
             <div className="flex items-center gap-3">
-              <Button variant="outline" className="rounded-xl bg-white/5 border-white/10 h-10">
+              <Button variant="outline" className="rounded-xl bg-white/5 border-white/10 h-10 active:scale-95 transition-transform">
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
-              <Button className="rounded-xl bg-primary hover:bg-primary/90 h-10">
+              <Button className="rounded-xl bg-primary hover:bg-primary/90 h-10 active:scale-95 transition-transform">
                 <Download className="w-4 h-4 mr-2" />
                 Download
               </Button>
@@ -140,8 +148,8 @@ export default function SessionDetailPage() {
           </div>
 
           {/* Player & Basic Info Header */}
-          <div className="grid grid-cols-3 gap-10">
-            <div className="col-span-2 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+            <div className="lg:col-span-2 space-y-6">
               {/* Premium Video Player Container */}
               <div className="relative aspect-video rounded-[2.5rem] overflow-hidden bg-white/[0.03] border border-white/5 shadow-2xl group">
                 {signedUrl ? (
@@ -163,26 +171,26 @@ export default function SessionDetailPage() {
 
               {/* Session Meta */}
               <div className="space-y-4 px-2">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-4">
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-xs font-bold px-3 py-1 uppercase tracking-widest">
                     {session.category || "Leadership Activation"}
                   </Badge>
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Calendar className="w-4 h-4" />
-                    {session.date ? format(session.date.toDate(), "MMMM d, yyyy") : "Unknown"}
+                    {formattedDate}
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground text-sm">
                     <Clock className="w-4 h-4" />
-                    {formatDuration(session.durationSeconds)}
+                    {duration}
                   </div>
                 </div>
-                <h1 className="text-4xl font-bold leading-tight">{session.title}</h1>
+                <h1 className="text-3xl md:text-4xl font-bold leading-tight">{session.title}</h1>
                 <div className="flex items-center gap-3 py-2">
                    <div className="w-10 h-10 rounded-full bg-white/[0.05] border border-white/10 flex items-center justify-center">
                      <User className="w-5 h-5 text-muted-foreground" />
                    </div>
                    <div>
-                     <p className="text-sm text-muted-foreground">Led by</p>
+                     <p className="text-sm text-muted-foreground leading-none mb-1">Led by</p>
                      <p className="font-bold">{session.instructor || "Academy Mentor"}</p>
                    </div>
                 </div>
@@ -231,10 +239,10 @@ export default function SessionDetailPage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-bold px-2">Related Sessions</h3>
                 {[1, 2].map((i) => (
-                  <Card key={i} className="bg-white/[0.02] border-white/5 rounded-2xl p-4 hover:bg-white/[0.05] transition-all cursor-pointer">
+                  <Card key={i} className="bg-white/[0.02] border-white/5 rounded-2xl p-4 hover:bg-white/[0.05] transition-all cursor-pointer active:scale-95">
                     <div className="flex gap-4">
                       <div className="w-20 aspect-video rounded-lg bg-white/5 border border-white/10 overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&q=80" className="w-full h-full object-cover opacity-50" />
+                        <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200&q=80" className="w-full h-full object-cover opacity-50" loading="lazy" />
                       </div>
                       <div>
                         <h4 className="text-sm font-bold line-clamp-1">Advanced Mentorship Vol. {i+4}</h4>
@@ -248,41 +256,35 @@ export default function SessionDetailPage() {
           </div>
 
           {/* AI Content Tabs */}
-          <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] p-10 min-h-[500px]">
+          <div className="bg-white/[0.02] border border-white/5 rounded-[3rem] p-6 md:p-10 min-h-[500px]">
              <Tabs defaultValue="overview" className="w-full">
-               <TabsList className="bg-white/5 border-white/10 rounded-2xl mb-10 p-1">
-                 <TabsTrigger value="overview" className="gap-2 px-6 py-2 rounded-xl">
-                   <FileText className="w-4 h-4" />
-                   Overview
-                 </TabsTrigger>
-                 <TabsTrigger value="transcript" className="gap-2 px-6 py-2 rounded-xl">
-                   <Search className="w-4 h-4" />
-                   Transcript
-                 </TabsTrigger>
-                 <TabsTrigger value="insights" className="gap-2 px-6 py-2 rounded-xl">
-                   <Lightbulb className="w-4 h-4" />
-                   Insights
-                 </TabsTrigger>
-                 <TabsTrigger value="action" className="gap-2 px-6 py-2 rounded-xl">
-                   <CheckCircle2 className="w-4 h-4" />
-                   Action Steps
-                 </TabsTrigger>
-                 <TabsTrigger value="discussion" className="gap-2 px-6 py-2 rounded-xl">
-                   <MessageSquare className="w-4 h-4" />
-                   Discussion
-                 </TabsTrigger>
-                 <TabsTrigger value="related" className="gap-2 px-6 py-2 rounded-xl">
-                   <Network className="w-4 h-4" />
-                   Knowledge Graph
-                 </TabsTrigger>
+               <TabsList className="bg-white/5 border-white/10 rounded-2xl mb-10 p-1 flex flex-wrap h-auto gap-1">
+                 {[
+                   { value: "overview", icon: FileText, label: "Overview" },
+                   { value: "transcript", icon: Search, label: "Transcript" },
+                   { value: "insights", icon: Lightbulb, label: "Insights" },
+                   { value: "action", icon: CheckCircle2, label: "Action Steps" },
+                   { value: "discussion", icon: MessageSquare, label: "Discussion" },
+                   { value: "related", icon: Network, label: "Knowledge Graph" }
+                 ].map((tab) => (
+                   <TabsTrigger 
+                     key={tab.value} 
+                     value={tab.value} 
+                     className="gap-2 px-4 md:px-6 py-2 rounded-xl active:scale-95 transition-transform"
+                   >
+                     <tab.icon className="w-4 h-4" />
+                     <span className="hidden md:inline">{tab.label}</span>
+                   </TabsTrigger>
+                 ))}
                </TabsList>
 
                <AnimatePresence mode="wait">
                  {/* Overview Tab */}
-                 <TabsContent value="overview" className="mt-0">
+                 <TabsContent value="overview" className="mt-0 outline-none">
                    <motion.div
-                     initial={{ opacity: 0, y: 10 }}
+                     initial={{ opacity: 0, y: 5 }}
                      animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.2 }}
                      className="max-w-4xl space-y-10"
                    >
                      <div className="space-y-4">
@@ -292,7 +294,7 @@ export default function SessionDetailPage() {
                        </p>
                      </div>
 
-                     <div className="grid grid-cols-2 gap-10 pt-4">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
                         <div className="space-y-4">
                           <h4 className="text-xl font-bold flex items-center gap-2">
                              <div className="w-2 h-2 rounded-full bg-primary" />
@@ -333,19 +335,20 @@ export default function SessionDetailPage() {
                  </TabsContent>
 
                  {/* Transcript Tab */}
-                 <TabsContent value="transcript" className="mt-0">
+                 <TabsContent value="transcript" className="mt-0 outline-none">
                    <motion.div
-                     initial={{ opacity: 0, y: 10 }}
+                     initial={{ opacity: 0, y: 5 }}
                      animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.2 }}
                      className="space-y-6"
                    >
-                     <div className="flex items-center justify-between">
+                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <h3 className="text-2xl font-bold">Session Transcript</h3>
-                        <div className="relative w-64">
+                        <div className="relative w-full md:w-64">
                           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                           <input 
                             placeholder="Find in transcript..." 
-                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-primary/50 transition-all"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:border-primary/50 transition-all outline-none"
                           />
                         </div>
                      </div>
@@ -354,15 +357,15 @@ export default function SessionDetailPage() {
                         <div className="space-y-8">
                           {session.transcriptChunks ? session.transcriptChunks.map((chunk: any, i: number) => (
                              <div key={i} className="group">
-                               <div className="flex items-start gap-6">
-                                 <div className="w-16 shrink-0 font-mono text-xs text-primary/60 pt-1">
+                               <div className="flex items-start gap-4 md:gap-6">
+                                 <div className="w-14 md:w-16 shrink-0 font-mono text-[10px] md:text-xs text-primary/60 pt-1">
                                    [{chunk.timestamp || "00:00"}]
                                  </div>
                                  <div className="space-y-2">
-                                   <div className="flex items-center gap-2 text-xs font-bold text-white/40 uppercase tracking-widest">
+                                   <div className="flex items-center gap-2 text-[10px] font-bold text-white/40 uppercase tracking-widest">
                                      Speaker {chunk.speaker || 1}
                                    </div>
-                                   <p className="text-lg text-muted-foreground group-hover:text-white/90 transition-colors">
+                                   <p className="text-base md:text-lg text-muted-foreground group-hover:text-white/90 transition-colors">
                                      {chunk.text}
                                    </p>
                                  </div>
@@ -370,7 +373,7 @@ export default function SessionDetailPage() {
                              </div>
                           )) : (
                             <div className="py-20 text-center space-y-4">
-                              <Search className="w-12 h-12 text-muted-foreground/20 mx-auto" />
+                              <Volume2 className="w-12 h-12 text-muted-foreground/20 mx-auto" />
                               <p className="text-muted-foreground">
                                 Full transcript is being timestamped and indexed for institutional knowledge.
                               </p>
@@ -382,11 +385,12 @@ export default function SessionDetailPage() {
                  </TabsContent>
 
                  {/* Insights Tab */}
-                 <TabsContent value="insights" className="mt-0">
+                 <TabsContent value="insights" className="mt-0 outline-none">
                    <motion.div
-                     initial={{ opacity: 0, y: 10 }}
+                     initial={{ opacity: 0, y: 5 }}
                      animate={{ opacity: 1, y: 0 }}
-                     className="grid grid-cols-2 gap-8"
+                     transition={{ duration: 0.2 }}
+                     className="grid grid-cols-1 md:grid-cols-2 gap-8"
                    >
                      <div className="space-y-6">
                        <h3 className="text-2xl font-bold">Leadership Principles</h3>
@@ -418,10 +422,11 @@ export default function SessionDetailPage() {
                  </TabsContent>
 
                  {/* Action Tab */}
-                 <TabsContent value="action" className="mt-0">
+                 <TabsContent value="action" className="mt-0 outline-none">
                    <motion.div
-                     initial={{ opacity: 0, y: 10 }}
+                     initial={{ opacity: 0, y: 5 }}
                      animate={{ opacity: 1, y: 0 }}
+                     transition={{ duration: 0.2 }}
                      className="max-w-3xl space-y-10"
                    >
                      <div className="space-y-6">
@@ -452,13 +457,13 @@ export default function SessionDetailPage() {
                  </TabsContent>
 
                  {/* Discussion & Knowledge Graph placeholders */}
-                 <TabsContent value="discussion" className="mt-0">
+                 <TabsContent value="discussion" className="mt-0 outline-none">
                    <div className="py-20 text-center space-y-4">
                      <MessageSquare className="w-12 h-12 text-muted-foreground/20 mx-auto" />
                      <p className="text-muted-foreground">Community discussion and AI-guided debate features coming soon.</p>
                    </div>
                  </TabsContent>
-                 <TabsContent value="related" className="mt-0">
+                 <TabsContent value="related" className="mt-0 outline-none">
                    <div className="py-20 text-center space-y-4">
                      <Network className="w-12 h-12 text-muted-foreground/20 mx-auto" />
                      <p className="text-muted-foreground">Advanced session connection graph is mapping this encounter into the institutional web.</p>

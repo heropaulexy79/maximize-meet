@@ -133,4 +133,8 @@
     background: radial-gradient(circle at top left, oklch(0.15 0.06 240), transparent),
                 radial-gradient(circle at bottom right, oklch(0.1 0.04 260), transparent);
   }
+  .touch-optimized {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
 }

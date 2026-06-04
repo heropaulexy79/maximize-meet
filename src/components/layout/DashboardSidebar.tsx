@@ -106,7 +106,7 @@ export function DashboardSidebar() {
             return (
               <Link key={item.href} href={item.href} onClick={() => setIsOpen(false)}>
                 <div className={cn(
-                  "flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 group relative",
+                  "flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 group relative active:scale-95",
                   isActive 
                     ? "text-primary" 
                     : "text-muted-foreground hover:text-white hover:bg-white/[0.03]"
