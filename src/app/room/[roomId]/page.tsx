@@ -741,7 +741,7 @@ function RoomContent({
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
   const room = useRoomContext();
   const [isAdmin, setIsAdmin] = useState(false);
-  const { isPipActive, isMobileMode, togglePip, pipWindow } = usePictureInPicture();
+  const { isPipActive, isMobileMode, showInAppPlayer, togglePip, pipWindow } = usePictureInPicture();
   const router = useRouter();
 
   useEffect(() => {
@@ -759,7 +759,7 @@ function RoomContent({
         <div className="flex-1 flex flex-col min-w-0 relative">
           <MeetingGrid layout={layout} />
           
-          {/* Shrunk State Overlay - Desktop only (mobile uses FloatingMiniPlayer) */}
+          {/* Shrunk State Overlay - Desktop Document PiP only */}
           <AnimatePresence>
             {isPipActive && !isMobileMode && (
               <motion.div 
@@ -870,27 +870,21 @@ function RoomContent({
           isCameraOff={!isCameraEnabled}
           onToggleMic={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
           onToggleCamera={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
-          onLeave={() => {
-            room.disconnect();
-            router.push("/dashboard");
-          }}
+          onLeave={() => { room.disconnect(); router.push("/dashboard"); }}
           onExitPip={() => togglePip()}
         />,
         pipWindow.document.body
       )}
 
-      {/* Mobile: In-app floating mini-player */}
-      {isPipActive && isMobileMode && (
+      {/* Mobile: In-app floating mini-player (only for iOS/unsupported - Android uses native video PiP) */}
+      {showInAppPlayer && (
         <FloatingMiniPlayer
           activeSpeakerName={user?.displayName || "Participant"}
           isMuted={!isMicrophoneEnabled}
           isCameraOff={!isCameraEnabled}
           onToggleMic={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
           onToggleCamera={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
-          onLeave={() => {
-            room.disconnect();
-            router.push("/dashboard");
-          }}
+          onLeave={() => { room.disconnect(); router.push("/dashboard"); }}
           onExpand={() => togglePip()}
         />
       )}
