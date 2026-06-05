@@ -17,6 +17,7 @@ import { useWakeLock } from "@/hooks/useWakeLock";
 import { usePictureInPicture } from "@/hooks/usePictureInPicture";
 import { createPortal } from "react-dom";
 import { PipWindow } from "@/components/room/PipWindow";
+import { FloatingMiniPlayer } from "@/components/room/FloatingMiniPlayer";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Mic,
@@ -417,8 +418,16 @@ function CustomControlDock({
 }
 
 // ─── Guest Name Dialog ────────────────────────────────────────────────────────
-function GuestNameDialog({ open, onJoin }: { open: boolean; onJoin: (name: string) => void }) {
+function GuestNameDialog({ open, onJoin, onRequestWakeLock }: { open: boolean; onJoin: (name: string) => void; onRequestWakeLock?: () => void }) {
   const [name, setName] = useState("");
+  
+  const handleJoin = () => {
+    if (name.trim()) {
+      if (onRequestWakeLock) onRequestWakeLock();
+      onJoin(name);
+    }
+  };
+
   return (
     <Dialog open={open}>
       <DialogContent className="bg-zinc-950 border-white/10 rounded-[2.5rem] p-8 max-w-md w-[90%]">
@@ -435,7 +444,7 @@ function GuestNameDialog({ open, onJoin }: { open: boolean; onJoin: (name: strin
           />
           <Button 
             disabled={!name.trim()} 
-            onClick={() => onJoin(name)} 
+            onClick={handleJoin} 
             className="w-full bg-primary hover:bg-primary/90 h-12 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-95"
           >
             Enter Meeting Room
@@ -542,7 +551,7 @@ function InviteDialog({ open, onClose, roomId }: any) {
 
 // ─── Main Room Page ────────────────────────────────────────────────────────────
 export default function RoomPage() {
-  useWakeLock(true);
+  const { requestWakeLock } = useWakeLock(true);
   const router = useRouter();
   const { roomId } = useParams();
   const { user, isAdmin: firebaseAdmin, loading: authLoading } = useAuth();
@@ -601,6 +610,10 @@ export default function RoomPage() {
         if (data.token) {
           setToken(data.token);
           setShowNameEntry(false);
+          // If we have a token and user is already logged in, try to activate background persistence
+          if (user) {
+            requestWakeLock().catch(console.error);
+          }
         } else {
           toast.error(data.error || "Failed to generate token.");
         }
@@ -657,7 +670,7 @@ export default function RoomPage() {
 
   if (!token) return (
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center gap-6">
-      <GuestNameDialog open={showNameEntry} onJoin={(name) => setGuestName(name)} />
+      <GuestNameDialog open={showNameEntry} onJoin={(name) => setGuestName(name)} onRequestWakeLock={() => requestWakeLock().catch(() => {})} />
       {!showNameEntry && (
         <>
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(59,130,246,0.3)]" />
@@ -728,7 +741,7 @@ function RoomContent({
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
   const room = useRoomContext();
   const [isAdmin, setIsAdmin] = useState(false);
-  const { isPipActive, togglePip, pipWindow } = usePictureInPicture();
+  const { isPipActive, isMobileMode, togglePip, pipWindow } = usePictureInPicture();
   const router = useRouter();
 
   useEffect(() => {
@@ -746,9 +759,9 @@ function RoomContent({
         <div className="flex-1 flex flex-col min-w-0 relative">
           <MeetingGrid layout={layout} />
           
-          {/* Shrunk State Overlay */}
+          {/* Shrunk State Overlay - Desktop only (mobile uses FloatingMiniPlayer) */}
           <AnimatePresence>
-            {isPipActive && (
+            {isPipActive && !isMobileMode && (
               <motion.div 
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -849,8 +862,8 @@ function RoomContent({
 
       <RoomAudioRenderer />
 
-      {/* Picture-in-Picture Portal */}
-      {isPipActive && pipWindow && createPortal(
+      {/* Desktop: Document Picture-in-Picture Portal */}
+      {isPipActive && !isMobileMode && pipWindow && createPortal(
         <PipWindow 
           activeSpeakerName={user?.displayName || "Participant"}
           isMuted={!isMicrophoneEnabled}
@@ -864,6 +877,22 @@ function RoomContent({
           onExitPip={() => togglePip()}
         />,
         pipWindow.document.body
+      )}
+
+      {/* Mobile: In-app floating mini-player */}
+      {isPipActive && isMobileMode && (
+        <FloatingMiniPlayer
+          activeSpeakerName={user?.displayName || "Participant"}
+          isMuted={!isMicrophoneEnabled}
+          isCameraOff={!isCameraEnabled}
+          onToggleMic={() => localParticipant.setMicrophoneEnabled(!isMicrophoneEnabled)}
+          onToggleCamera={() => localParticipant.setCameraEnabled(!isCameraEnabled)}
+          onLeave={() => {
+            room.disconnect();
+            router.push("/dashboard");
+          }}
+          onExpand={() => togglePip()}
+        />
       )}
     </>
   );

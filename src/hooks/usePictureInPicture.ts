@@ -5,29 +5,30 @@ import { useState, useCallback, useEffect, useRef } from "react";
 /**
  * usePictureInPicture
  * Manages Picture-in-Picture state for the meeting room.
- * Supports Document PiP (Chrome 116+) and standard Video PiP fallback.
+ * - Desktop (Chrome 116+): Uses Document PiP API (new window)
+ * - Fallback (mobile/other): Uses in-app floating mini-player overlay
  */
 export function usePictureInPicture() {
   const [isPipActive, setIsPipActive] = useState(false);
   const [pipWindow, setPipWindow] = useState<any>(null);
   const isEnteringRef = useRef(false);
 
-  /**
-   * enterPip
-   * Triggers Picture-in-Picture mode.
-   */
+  // Detect if we should use the in-app fallback (no documentPictureInPicture support)
+  const isMobileMode = typeof window !== "undefined"
+    ? !("documentPictureInPicture" in window)
+    : true;
+
   const enterPip = useCallback(async (videoElement?: HTMLVideoElement) => {
     if (isEnteringRef.current) return;
     isEnteringRef.current = true;
-    console.log("[PiP] Attempting to enter PiP...");
+    console.log("[PiP] Attempting to enter PiP... isMobileMode:", isMobileMode);
 
     try {
-      // 1. Try Document Picture-in-Picture (Full UI support)
+      // 1. Try Document Picture-in-Picture (Desktop Chrome 116+)
       if ("documentPictureInPicture" in window) {
         console.log("[PiP] Using Document Picture-in-Picture API");
-        
+
         if (pipWindow) {
-          console.log("[PiP] PiP window already exists, focusing...");
           pipWindow.focus();
           isEnteringRef.current = false;
           return pipWindow;
@@ -38,7 +39,6 @@ export function usePictureInPicture() {
           height: 340,
         });
 
-        console.log("[PiP] Document PiP window opened");
         setPipWindow(newPipWindow);
         setIsPipActive(true);
 
@@ -53,15 +53,12 @@ export function usePictureInPicture() {
                 link.href = styleSheet.href;
                 newPipWindow.document.head.appendChild(link);
               } else {
-                const cssRules = Array.from(styleSheet.cssRules)
-                  .map((rule) => rule.cssText)
-                  .join("");
+                const cssRules = Array.from(styleSheet.cssRules).map((r) => r.cssText).join("");
                 const style = document.createElement("style");
                 style.textContent = cssRules;
                 newPipWindow.document.head.appendChild(style);
               }
             } catch (e) {
-              console.warn("[PiP] Failed to copy a stylesheet:", e);
               if (styleSheet.href) {
                 const link = document.createElement("link");
                 link.rel = "stylesheet";
@@ -73,7 +70,6 @@ export function usePictureInPicture() {
         }, 0);
 
         newPipWindow.addEventListener("pagehide", () => {
-          console.log("[PiP] Document PiP window closed");
           setIsPipActive(false);
           setPipWindow(null);
         });
@@ -83,43 +79,43 @@ export function usePictureInPicture() {
       }
 
       // 2. Fallback: Standard Video PiP
-      console.log("[PiP] Falling back to standard Video PiP");
-      
-      // Find the best video element: 
-      // 1. Provided element
-      // 2. Largest visible video (likely the main speaker)
-      // 3. Any video
       let video = videoElement;
       if (!video) {
         const videos = Array.from(document.querySelectorAll("video"));
-        video = videos.find(v => v.readyState >= 2 && v.videoWidth > 0) || videos[0];
+        video = videos.find((v) => v.readyState >= 2 && v.videoWidth > 0) || videos[0];
       }
 
       if (video && video.requestPictureInPicture) {
-        console.log("[PiP] Requesting Video PiP for:", video);
         await video.requestPictureInPicture();
         setIsPipActive(true);
-        video.addEventListener("leavepictureinpicture", () => {
-          setIsPipActive(false);
-        }, { once: true });
+        video.addEventListener("leavepictureinpicture", () => setIsPipActive(false), { once: true });
         isEnteringRef.current = false;
         return true;
-      } else {
-        console.warn("[PiP] No compatible video element found or requestPictureInPicture not supported");
-        // Final attempt for mobile Safari - some older versions use webkitRequestFullscreen or similar for PiP
-        if (video && (video as any).webkitSetPresentationMode) {
-          (video as any).webkitSetPresentationMode("picture-in-picture");
-          setIsPipActive(true);
-          isEnteringRef.current = false;
-          return true;
-        }
       }
+
+      if (video && (video as any).webkitSetPresentationMode) {
+        (video as any).webkitSetPresentationMode("picture-in-picture");
+        setIsPipActive(true);
+        isEnteringRef.current = false;
+        return true;
+      }
+
+      // 3. Final fallback: In-app floating overlay (works everywhere on mobile)
+      console.log("[PiP] Using in-app floating mini-player fallback.");
+      setIsPipActive(true);
+      isEnteringRef.current = false;
+      return true;
+
     } catch (err) {
       console.error("[PiP] Failed to enter Picture-in-Picture:", err);
+      // Even on error, activate the in-app fallback
+      console.log("[PiP] Falling back to in-app overlay after error.");
+      setIsPipActive(true);
     }
+
     isEnteringRef.current = false;
     return null;
-  }, [pipWindow]);
+  }, [pipWindow, isMobileMode]);
 
   const exitPip = useCallback(async () => {
     console.log("[PiP] Exiting PiP...");
@@ -132,15 +128,17 @@ export function usePictureInPicture() {
     setIsPipActive(false);
   }, [pipWindow]);
 
-  const togglePip = useCallback(async (videoElement?: HTMLVideoElement) => {
-    if (isPipActive) {
-      await exitPip();
-    } else {
-      await enterPip(videoElement);
-    }
-  }, [isPipActive, enterPip, exitPip]);
+  const togglePip = useCallback(
+    async (videoElement?: HTMLVideoElement) => {
+      if (isPipActive) {
+        await exitPip();
+      } else {
+        await enterPip(videoElement);
+      }
+    },
+    [isPipActive, enterPip, exitPip]
+  );
 
-  // Handle automatic PiP on visibility change (minimize)
   useEffect(() => {
     const handleVisibilityChange = async () => {
       if (document.visibilityState === "hidden" && !isPipActive) {
@@ -155,5 +153,5 @@ export function usePictureInPicture() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [isPipActive]);
 
-  return { isPipActive, enterPip, exitPip, togglePip, pipWindow };
+  return { isPipActive, isMobileMode, enterPip, exitPip, togglePip, pipWindow };
 }

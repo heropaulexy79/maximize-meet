@@ -70,6 +70,7 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  serverExternalPackages: ["fluent-ffmpeg"],
 };
 
 export default withPWA(nextConfig);
