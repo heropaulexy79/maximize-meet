@@ -10,6 +10,10 @@ export const POST = withSecurity(async (req, user) => {
       return NextResponse.json({ error: "Missing egressId in request body" }, { status: 400 });
     }
 
+    // Diagnostics
+    const hasSecret = !!process.env.INTERNAL_API_SECRET;
+    console.log(`[Vault/Reprocess] Secret present: ${hasSecret}`);
+
     const docRef = adminDb.collection("replays").doc(egressId);
     const snapshot = await docRef.get();
 
@@ -48,14 +52,22 @@ export const POST = withSecurity(async (req, user) => {
       
       return NextResponse.json({ 
         error: "Failed to trigger reprocessing", 
-        detail: `Internal API returned ${errStatus}: ${errText.substring(0, 100)}`
+        message: `Internal API returned ${errStatus}: ${errText.substring(0, 100)}`
       }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: "Reprocessing task queued" });
   } catch (error: any) {
-    console.error("Error in reprocess API:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    const protocol = req.headers.get("x-forwarded-proto") || "https";
+    const host = req.headers.get("host");
+    const appUrl = `${protocol}://${host}`;
+    
+    console.error(`[Vault/Reprocess] Unexpected error while calling ${appUrl}:`, error);
+    return NextResponse.json({ 
+      error: "Internal Server Error", 
+      message: `${error.message} (Target: ${appUrl}/api/vault/process)`,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined
+    }, { status: 500 });
   }
 }, { requireAdmin: true });
 
