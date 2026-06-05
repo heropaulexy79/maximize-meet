@@ -2,27 +2,30 @@
 function sanitizeKey(fileKey, bucketName) {
   let key = fileKey;
 
-  // 1. Decode recursively to handle nested/encoded URLs
-  while (key.includes('%')) {
+  if (!key) return "";
+
+  // 1. Decode recursively up to 3 levels to handle nested or double-encoded URLs
+  let lastKey = "";
+  for (let i = 0; i < 3; i++) {
+    if (!key.includes('%') || key === lastKey) break;
     try {
-      const decoded = decodeURIComponent(key);
-      if (decoded === key) break;
-      key = decoded;
+      lastKey = key;
+      key = decodeURIComponent(key);
     } catch (e) {
       break;
     }
   }
 
-  // 2. Handle full https:// or http:// URLs
+  // 2. Handle full https:// or http:// URLs — extract just the pathname
   if (key.startsWith("https://") || key.startsWith("http://")) {
     try {
-      // Manual host stripping if URL constructor is not available or behaves differently
+      const urlObj = new URL(key);
+      key = urlObj.pathname;
+    } catch (e) {
       const hostEnd = key.indexOf('/', 8);
       if (hostEnd !== -1) {
         key = key.substring(hostEnd + 1);
       }
-    } catch (e) {
-      // use as-is
     }
   }
 
@@ -30,23 +33,12 @@ function sanitizeKey(fileKey, bucketName) {
   if (key.startsWith("s3://")) {
     const withoutScheme = key.replace("s3://", "");
     const parts = withoutScheme.split("/");
-    if (parts.length > 1) {
-      key = parts.slice(1).join("/");
-    } else {
-      key = "";
-    }
+    key = parts.length > 1 ? parts.slice(1).join("/") : parts[0];
   }
 
-  // 4. Strip ALL leading occurrences of the bucket name prefix
-  if (bucketName) {
-    let changed = true;
-    while (changed) {
-      changed = false;
-      if (key.startsWith(bucketName + "/")) {
-        key = key.slice(bucketName.length + 1);
-        changed = true;
-      }
-    }
+  // Normalization: Ensure no leading slashes
+  while (key.startsWith("/")) {
+    key = key.slice(1);
   }
 
   return key;
@@ -54,15 +46,13 @@ function sanitizeKey(fileKey, bucketName) {
 
 const bucket = "maximize-meet";
 const testCases = [
-  "https://0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com/maximize-meet/recordings/file.ogg",
-  "https://maximize-meet.0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com/maximize-meet/recordings/file.ogg",
-  "maximize-meet/recordings/file.ogg",
-  "recordings/file.ogg",
-  "maximize-meet/maximize-meet/https%3A//maximize-meet.0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com%252Fmaximize-meet/recordings/file.ogg",
-  "https%3A%2F%2Fmaximize-meet.r2.com%2Fmaximize-meet%2Frecordings%2Ffile.ogg"
+  // Path-style: bucket is first segment of path, folder also named bucket
+  "https://0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com/maximize-meet/maximize-meet/recordings/file.ogg",
+  // Public R2 worker/domain URL
+  "https://pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev/maximize-meet/recordings/file.ogg"
 ];
 
-console.log("Testing sanitization logic:");
+console.log("Testing non-aggressive sanitization logic:");
 testCases.forEach(tc => {
   console.log(`\nInput: ${tc}`);
   const result = sanitizeKey(tc, bucket);

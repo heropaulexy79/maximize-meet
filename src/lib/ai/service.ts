@@ -191,14 +191,13 @@ function extractFileKey(url: string) {
 
     if (!key) return "";
 
-    // 1. Decode recursively to handle nested or double-encoded URLs
+    // 1. Decode recursively up to 3 levels to handle nested or double-encoded URLs
     let lastKey = "";
-    while (key.includes('%') && key !== lastKey) {
+    for (let i = 0; i < 3; i++) {
+      if (!key.includes('%') || key === lastKey) break;
       try {
         lastKey = key;
-        const decoded = decodeURIComponent(key);
-        if (decoded === key) break;
-        key = decoded;
+        key = decodeURIComponent(key);
       } catch {
         break;
       }
@@ -208,7 +207,7 @@ function extractFileKey(url: string) {
     if (key.startsWith("https://") || key.startsWith("http://")) {
       try {
         const urlObj = new URL(key);
-        key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
+        key = urlObj.pathname;
       } catch {
         const hostEnd = key.indexOf('/', 8);
         if (hostEnd !== -1) {
@@ -219,24 +218,12 @@ function extractFileKey(url: string) {
       // 3. Handle s3:// protocol
       const withoutScheme = key.replace("s3://", "");
       const parts = withoutScheme.split("/");
-      key = parts.length > 1 ? parts.slice(1).join("/") : "";
+      key = parts.length > 1 ? parts.slice(1).join("/") : parts[0];
     }
 
-    // 4. Strip ALL leading occurrences of the bucket name
-    const bucketName = process.env.S3_BUCKET;
-    if (bucketName) {
-      let changed = true;
-      while (changed) {
-        changed = false;
-        if (key.startsWith(`${bucketName}/`)) {
-          key = key.slice(bucketName.length + 1);
-          changed = true;
-        }
-        if (key.startsWith("/")) {
-          key = key.slice(1);
-          changed = true;
-        }
-      }
+    // Normalization: Ensure no leading slashes
+    while (key.startsWith("/")) {
+      key = key.slice(1);
     }
 
     return key;

@@ -36,15 +36,13 @@ function sanitizeKey(fileKey: string, bucketName?: string): string {
 
   if (!key) return "";
 
-  // 1. Decode recursively to handle nested or double-encoded URLs
-  // This handles cases like: bucket/https%3A//host/bucket/recordings/file.ogg
+  // 1. Decode recursively up to 3 levels to handle nested or double-encoded URLs
   let lastKey = "";
-  while (key.includes('%') && key !== lastKey) {
+  for (let i = 0; i < 3; i++) {
+    if (!key.includes('%') || key === lastKey) break;
     try {
       lastKey = key;
-      const decoded = decodeURIComponent(key);
-      if (decoded === key) break;
-      key = decoded;
+      key = decodeURIComponent(key);
     } catch {
       break;
     }
@@ -54,10 +52,8 @@ function sanitizeKey(fileKey: string, bucketName?: string): string {
   if (key.startsWith("https://") || key.startsWith("http://")) {
     try {
       const urlObj = new URL(key);
-      // pathname starts with "/" — remove it
-      key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
+      key = urlObj.pathname;
     } catch {
-      // If URL parsing fails (e.g. invalid host), manual fallback
       const hostEnd = key.indexOf('/', 8);
       if (hostEnd !== -1) {
         key = key.substring(hostEnd + 1);
@@ -68,27 +64,15 @@ function sanitizeKey(fileKey: string, bucketName?: string): string {
   // 3. Handle s3:// URLs
   if (key.startsWith("s3://")) {
     const withoutScheme = key.replace("s3://", "");
-    // s3://bucket/path -> path
     const parts = withoutScheme.split("/");
-    key = parts.length > 1 ? parts.slice(1).join("/") : "";
+    // s3://bucket/path/to/file -> if bucket matches, we might strip it, 
+    // but to be safe and consistent with R2 results, let's keep the path segments.
+    key = parts.length > 1 ? parts.slice(1).join("/") : parts[0];
   }
 
-  // 4. Strip ALL leading occurrences of the bucket name prefix
-  // handles path-style where bucket is in the path, and any double-prefixing
-  if (bucketName) {
-    let changed = true;
-    while (changed) {
-      changed = false;
-      if (key.startsWith(`${bucketName}/`)) {
-        key = key.slice(bucketName.length + 1);
-        changed = true;
-      }
-      // Also handle potential double slashes
-      if (key.startsWith("/")) {
-        key = key.slice(1);
-        changed = true;
-      }
-    }
+  // Normalization: Ensure no leading slashes
+  while (key.startsWith("/")) {
+    key = key.slice(1);
   }
 
   return key;
