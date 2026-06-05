@@ -5,6 +5,16 @@ import path from "path";
 import os from "os";
 import { Readable } from "stream";
 import ffmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+import ffprobePath from "ffprobe-static";
+
+// Configure ffmpeg to use static binaries for serverless environment
+if (ffmpegPath) {
+  ffmpeg.setFfmpegPath(ffmpegPath);
+}
+if (ffprobePath) {
+  ffmpeg.setFfprobePath(ffprobePath);
+}
 
 let endpoint = process.env.S3_ENDPOINT || "";
 const bucketName = process.env.S3_BUCKET || "";
