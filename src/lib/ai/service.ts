@@ -5,16 +5,9 @@ import path from "path";
 import os from "os";
 import { Readable } from "stream";
 import ffmpeg from "fluent-ffmpeg";
-import ffmpegPath from "ffmpeg-static";
-import ffprobePath from "ffprobe-static";
 
-// Configure ffmpeg to use static binaries for serverless environment
-if (ffmpegPath) {
-  ffmpeg.setFfmpegPath(ffmpegPath as any);
-}
-if (ffprobePath) {
-  ffmpeg.setFfprobePath(ffprobePath as any);
-}
+// Note: We removed ffmpeg-static and ffprobe-static to keep the bundle size small on Vercel.
+// The code will now fallback to direct file use if ffmpeg is missing.
 
 let endpoint = process.env.S3_ENDPOINT || "";
 const bucketName = process.env.S3_BUCKET || "";
@@ -65,15 +58,13 @@ export async function transcribeAudio(fileUrl: string) {
       fileStream.on("error", (err) => reject(err));
     });
 
-    console.log(`[AI] Using ffmpeg path: ${ffmpegPath}`);
+    console.log(`[AI] Checking if ffmpeg is available...`);
     
     // Check if we can skip conversion for ogg/webm
     const isOgg = fileKey.toLowerCase().endsWith(".ogg") || fileKey.toLowerCase().endsWith(".webm");
     
     if (isOgg) {
-      console.log(`[AI] Detecting audio-native format (${isOgg ? "OGG/WebM" : "Unknown"}). Attempting direct use...`);
-      // We still try to convert to mp3 for best compatibility with Groq, 
-      // but if ffmpeg is missing, we'll fallback to sending the original.
+      console.log(`[AI] Detecting audio-native format (${isOgg ? "OGG/WebM" : "Unknown"}). Attempting direct use if conversion fails...`);
       try {
         await new Promise<void>((resolve, reject) => {
           ffmpeg(downloadPath)
@@ -84,19 +75,24 @@ export async function transcribeAudio(fileUrl: string) {
             .save(audioPath);
         });
       } catch (ffErr) {
-        console.warn(`[AI] FFmpeg conversion failed or missing, falling back to original file:`, ffErr);
+        console.warn(`[AI] FFmpeg conversion failed or missing (this is expected on Vercel), falling back to original file for Groq:`, ffErr);
         fs.copyFileSync(downloadPath, audioPath);
       }
     } else {
-      console.log(`[AI] Extracting audio for transcription...`);
-      await new Promise<void>((resolve, reject) => {
-        ffmpeg(downloadPath)
-          .toFormat("mp3")
-          .audioBitrate(64)
-          .on("end", () => resolve())
-          .on("error", (err) => reject(err))
-          .save(audioPath);
-      });
+      console.log(`[AI] Attempting audio extraction...`);
+      try {
+        await new Promise<void>((resolve, reject) => {
+          ffmpeg(downloadPath)
+            .toFormat("mp3")
+            .audioBitrate(64)
+            .on("end", () => resolve())
+            .on("error", (err) => reject(err))
+            .save(audioPath);
+        });
+      } catch (ffErr) {
+        console.warn(`[AI] FFmpeg extraction failed, attempting to use original file as fallback...`);
+        fs.copyFileSync(downloadPath, audioPath);
+      }
     }
 
     const stats = fs.statSync(audioPath);
