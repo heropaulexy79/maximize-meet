@@ -70,6 +70,13 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  serverExternalPackages: ["ffmpeg-static", "ffprobe-static"],
+  outputFileTracingIncludes: {
+    "/api/**/*": [
+      "./node_modules/ffmpeg-static/ffmpeg",
+      "./node_modules/ffprobe-static/ffprobe"
+    ],
+  },
 };
 
 export default withPWA(nextConfig);

@@ -65,15 +65,39 @@ export async function transcribeAudio(fileUrl: string) {
       fileStream.on("error", (err) => reject(err));
     });
 
-    console.log(`[AI] Extracting audio for transcription...`);
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(downloadPath)
-        .toFormat("mp3")
-        .audioBitrate(64)
-        .on("end", () => resolve())
-        .on("error", (err) => reject(err))
-        .save(audioPath);
-    });
+    console.log(`[AI] Using ffmpeg path: ${ffmpegPath}`);
+    
+    // Check if we can skip conversion for ogg/webm
+    const isOgg = fileKey.toLowerCase().endsWith(".ogg") || fileKey.toLowerCase().endsWith(".webm");
+    
+    if (isOgg) {
+      console.log(`[AI] Detecting audio-native format (${isOgg ? "OGG/WebM" : "Unknown"}). Attempting direct use...`);
+      // We still try to convert to mp3 for best compatibility with Groq, 
+      // but if ffmpeg is missing, we'll fallback to sending the original.
+      try {
+        await new Promise<void>((resolve, reject) => {
+          ffmpeg(downloadPath)
+            .toFormat("mp3")
+            .audioBitrate(64)
+            .on("end", () => resolve())
+            .on("error", (err) => reject(err))
+            .save(audioPath);
+        });
+      } catch (ffErr) {
+        console.warn(`[AI] FFmpeg conversion failed or missing, falling back to original file:`, ffErr);
+        fs.copyFileSync(downloadPath, audioPath);
+      }
+    } else {
+      console.log(`[AI] Extracting audio for transcription...`);
+      await new Promise<void>((resolve, reject) => {
+        ffmpeg(downloadPath)
+          .toFormat("mp3")
+          .audioBitrate(64)
+          .on("end", () => resolve())
+          .on("error", (err) => reject(err))
+          .save(audioPath);
+      });
+    }
 
     const stats = fs.statSync(audioPath);
     const fileSizeInMB = stats.size / (1024 * 1024);
