@@ -6,9 +6,17 @@ import os from "os";
 import { Readable } from "stream";
 import ffmpeg from "fluent-ffmpeg";
 
+let endpoint = process.env.S3_ENDPOINT || "";
+const bucketName = process.env.S3_BUCKET || "";
+
+if (bucketName && endpoint.endsWith(`/${bucketName}`)) {
+  endpoint = endpoint.substring(0, endpoint.length - (bucketName.length + 1));
+}
+
 const s3Client = new S3Client({
   region: process.env.S3_REGION || "auto",
-  endpoint: process.env.S3_ENDPOINT,
+  endpoint: endpoint,
+  forcePathStyle: true,
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY || "",
     secretAccessKey: process.env.S3_SECRET_KEY || "",
