@@ -25,10 +25,10 @@ export const POST = withSecurity(async (req, user) => {
     }
 
     // Delegate to the dedicated processing route which has maxDuration=300
-    // Dynamically determine the app URL from the host header to avoid issues with misconfigured env vars
-    const protocol = req.headers.get("x-forwarded-proto") || "http";
+    // EXCLUSIVELY determine the app URL from the host header to ensure we call ourselves correctly
+    const protocol = req.headers.get("x-forwarded-proto") || "https";
     const host = req.headers.get("host");
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+    const appUrl = `${protocol}://${host}`;
     
     console.log(`[Vault/Reprocess] Triggering internal processing at ${appUrl}/api/vault/process`);
 
@@ -42,9 +42,14 @@ export const POST = withSecurity(async (req, user) => {
     });
 
     if (!processRes.ok) {
-      const errData = await processRes.json().catch(() => ({}));
-      console.error(`[Vault] Reprocess trigger failed for ${egressId}:`, errData);
-      return NextResponse.json({ error: "Failed to trigger reprocessing" }, { status: 500 });
+      const errStatus = processRes.status;
+      const errText = await processRes.text().catch(() => "Unknown error");
+      console.error(`[Vault] Reprocess trigger failed for ${egressId}: Status ${errStatus}, Body: ${errText}`);
+      
+      return NextResponse.json({ 
+        error: "Failed to trigger reprocessing", 
+        detail: `Internal API returned ${errStatus}: ${errText.substring(0, 100)}`
+      }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, message: "Reprocessing task queued" });
