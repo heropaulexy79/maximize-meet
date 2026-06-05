@@ -25,8 +25,13 @@ export const POST = withSecurity(async (req, user) => {
     }
 
     // Delegate to the dedicated processing route which has maxDuration=300
-    // and runs in its own serverless invocation so it won't be killed prematurely.
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    // Dynamically determine the app URL from the host header to avoid issues with misconfigured env vars
+    const protocol = req.headers.get("x-forwarded-proto") || "http";
+    const host = req.headers.get("host");
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+    
+    console.log(`[Vault/Reprocess] Triggering internal processing at ${appUrl}/api/vault/process`);
+
     const processRes = await fetch(`${appUrl}/api/vault/process`, {
       method: "POST",
       headers: {

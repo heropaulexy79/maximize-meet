@@ -155,7 +155,13 @@ export async function POST(req: NextRequest) {
         // 3. Trigger Knowledge Vault AI Pipeline
         // We fire a real HTTP request to a dedicated route so it runs in its own
         // serverless invocation (maxDuration=300) and isn't killed when we return here.
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        // Dynamically detect the host from the incoming webhook request
+        const protocol = req.headers.get("x-forwarded-proto") || "http";
+        const host = req.headers.get("host");
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || `${protocol}://${host}`;
+
+        console.log(`[Vault] Triggering /api/vault/process for ${egressInfo.egressId} at ${appUrl}`);
+
         fetch(`${appUrl}/api/vault/process`, {
           method: "POST",
           headers: {
