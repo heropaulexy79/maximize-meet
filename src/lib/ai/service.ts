@@ -187,27 +187,55 @@ export async function analyzeSession(transcript: string) {
 
 function extractFileKey(url: string) {
   try {
-    let key: string;
+    let key = url;
 
-    // Handle s3:// protocol
-    if (url.startsWith("s3://")) {
-      const withoutScheme = url.replace("s3://", "");
-      // s3://bucket/path/to/file -> path/to/file
-      key = withoutScheme.split("/").slice(1).join("/");
-    } else if (url.startsWith("https://") || url.startsWith("http://")) {
-      // Handle full HTTPS URLs (e.g. R2 public or path-style URLs)
-      const urlObj = new URL(url);
-      key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
-    } else {
-      // Already a plain key like "recordings/file.ogg"
-      key = url;
+    if (!key) return "";
+
+    // 1. Decode recursively to handle nested or double-encoded URLs
+    let lastKey = "";
+    while (key.includes('%') && key !== lastKey) {
+      try {
+        lastKey = key;
+        const decoded = decodeURIComponent(key);
+        if (decoded === key) break;
+        key = decoded;
+      } catch {
+        break;
+      }
     }
 
-    // Strip ALL leading occurrences of the bucket name
+    // 2. Handle full https:// or http:// URLs
+    if (key.startsWith("https://") || key.startsWith("http://")) {
+      try {
+        const urlObj = new URL(key);
+        key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
+      } catch {
+        const hostEnd = key.indexOf('/', 8);
+        if (hostEnd !== -1) {
+          key = key.substring(hostEnd + 1);
+        }
+      }
+    } else if (key.startsWith("s3://")) {
+      // 3. Handle s3:// protocol
+      const withoutScheme = key.replace("s3://", "");
+      const parts = withoutScheme.split("/");
+      key = parts.length > 1 ? parts.slice(1).join("/") : "";
+    }
+
+    // 4. Strip ALL leading occurrences of the bucket name
     const bucketName = process.env.S3_BUCKET;
     if (bucketName) {
-      while (key.startsWith(`${bucketName}/`)) {
-        key = key.slice(bucketName.length + 1);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        if (key.startsWith(`${bucketName}/`)) {
+          key = key.slice(bucketName.length + 1);
+          changed = true;
+        }
+        if (key.startsWith("/")) {
+          key = key.slice(1);
+          changed = true;
+        }
       }
     }
 

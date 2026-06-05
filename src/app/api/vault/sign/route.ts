@@ -5,9 +5,18 @@ import { withSecurity } from "@/lib/api-wrapper";
 
 // S3 Client configuration
 // forcePathStyle is required for Cloudflare R2 presigned URL generation
+let endpoint = process.env.S3_ENDPOINT || "";
+const bucketName = process.env.S3_BUCKET || "";
+
+// If the endpoint contains the bucket name (e.g. accidentally set in env vars),
+// strip it to avoid double-prefixing with forcePathStyle: true
+if (bucketName && endpoint.endsWith(`/${bucketName}`)) {
+  endpoint = endpoint.substring(0, endpoint.length - (bucketName.length + 1));
+}
+
 const s3Client = new S3Client({
   region: process.env.S3_REGION || "auto",
-  endpoint: process.env.S3_ENDPOINT,
+  endpoint: endpoint,
   forcePathStyle: true,
   credentials: {
     accessKeyId: process.env.S3_ACCESS_KEY || "",
@@ -25,29 +34,60 @@ const s3Client = new S3Client({
 function sanitizeKey(fileKey: string, bucketName?: string): string {
   let key = fileKey;
 
-  // Handle full https:// URLs — extract just the pathname
+  if (!key) return "";
+
+  // 1. Decode recursively to handle nested or double-encoded URLs
+  // This handles cases like: bucket/https%3A//host/bucket/recordings/file.ogg
+  let lastKey = "";
+  while (key.includes('%') && key !== lastKey) {
+    try {
+      lastKey = key;
+      const decoded = decodeURIComponent(key);
+      if (decoded === key) break;
+      key = decoded;
+    } catch {
+      break;
+    }
+  }
+
+  // 2. Handle full https:// or http:// URLs — extract just the pathname
   if (key.startsWith("https://") || key.startsWith("http://")) {
     try {
       const urlObj = new URL(key);
       // pathname starts with "/" — remove it
       key = urlObj.pathname.startsWith("/") ? urlObj.pathname.substring(1) : urlObj.pathname;
     } catch {
-      // not a valid URL, use as-is
+      // If URL parsing fails (e.g. invalid host), manual fallback
+      const hostEnd = key.indexOf('/', 8);
+      if (hostEnd !== -1) {
+        key = key.substring(hostEnd + 1);
+      }
     }
   }
 
-  // Handle s3:// URLs
+  // 3. Handle s3:// URLs
   if (key.startsWith("s3://")) {
     const withoutScheme = key.replace("s3://", "");
     // s3://bucket/path -> path
-    key = withoutScheme.split("/").slice(1).join("/");
+    const parts = withoutScheme.split("/");
+    key = parts.length > 1 ? parts.slice(1).join("/") : "";
   }
 
-  // Strip ALL leading occurrences of the bucket name prefix
-  // (handles both path-style where bucket is in the path, and any double-prefix)
+  // 4. Strip ALL leading occurrences of the bucket name prefix
+  // handles path-style where bucket is in the path, and any double-prefixing
   if (bucketName) {
-    while (key.startsWith(`${bucketName}/`)) {
-      key = key.slice(bucketName.length + 1);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      if (key.startsWith(`${bucketName}/`)) {
+        key = key.slice(bucketName.length + 1);
+        changed = true;
+      }
+      // Also handle potential double slashes
+      if (key.startsWith("/")) {
+        key = key.slice(1);
+        changed = true;
+      }
     }
   }
 
@@ -62,8 +102,9 @@ export const POST = withSecurity(async (req, user) => {
       return NextResponse.json({ error: "fileKey is required" }, { status: 400 });
     }
 
-    const bucketName = process.env.S3_BUCKET;
     const sanitizedKey = sanitizeKey(fileKey, bucketName);
+
+    console.log(`[Signing] Original: ${fileKey.substring(0, 50)}... -> Sanitized: ${sanitizedKey}`);
 
     const command = new GetObjectCommand({
       Bucket: bucketName,
