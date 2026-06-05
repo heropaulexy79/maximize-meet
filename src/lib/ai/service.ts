@@ -10,10 +10,10 @@ import ffprobePath from "ffprobe-static";
 
 // Configure ffmpeg to use static binaries for serverless environment
 if (ffmpegPath) {
-  ffmpeg.setFfmpegPath(ffmpegPath);
+  ffmpeg.setFfmpegPath(ffmpegPath as any);
 }
 if (ffprobePath) {
-  ffmpeg.setFfprobePath(ffprobePath);
+  ffmpeg.setFfprobePath(ffprobePath as any);
 }
 
 let endpoint = process.env.S3_ENDPOINT || "";
