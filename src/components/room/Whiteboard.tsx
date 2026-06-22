@@ -80,6 +80,19 @@ export function Whiteboard({ isAdmin, onClose }: WhiteboardProps) {
 
   const wb = useWhiteboard(baseCanvasRef, activeCanvasRef, publishData);
 
+  // ── Broadcast open/close to all participants ─────────────────────────────────
+  useEffect(() => {
+    const broadcast = (open: boolean) => {
+      if (!room?.localParticipant) return;
+      const payload = JSON.stringify({ category: "whiteboard", type: "whiteboard_state", open });
+      room.localParticipant
+        .publishData(new TextEncoder().encode(payload), { reliable: true })
+        .catch(() => {});
+    };
+    broadcast(true);
+    return () => broadcast(false);
+  }, [room]);
+
   // ── Initialize canvas background ────────────────────────────────────────────
   useEffect(() => {
     const ctx = baseCanvasRef.current?.getContext("2d");

@@ -156,9 +156,17 @@ function RoomEventsListener({ onRecordingChange }: { onRecordingChange: (rec: bo
         }
 
         if (data.category === "whiteboard") {
-          window.dispatchEvent(new CustomEvent("whiteboard-data", {
-            detail: { ...data, senderIdentity: participant.identity }
-          }));
+          if (data.type === "whiteboard_state") {
+            // Auto-open/close panel for all participants
+            window.dispatchEvent(new CustomEvent("whiteboard-state", {
+              detail: { open: data.open, senderName: participant.name || participant.identity }
+            }));
+          } else {
+            // Drawing stroke events → forward to canvas
+            window.dispatchEvent(new CustomEvent("whiteboard-data", {
+              detail: { ...data, senderIdentity: participant.identity }
+            }));
+          }
         }
       } catch (e) {
         console.error("Error parsing room data:", e);
@@ -779,6 +787,23 @@ function RoomContent({
     const meta = localParticipant.metadata ? JSON.parse(localParticipant.metadata) : {};
     setIsAdmin(firebaseAdmin || meta.role === "admin");
   }, [firebaseAdmin, localParticipant.metadata]);
+
+  // ── Sync whiteboard open/close with remote participants ───────────────────────
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { open, senderName } = (e as CustomEvent).detail;
+      setWhiteboardOpen(open);
+      if (open) {
+        toast.info(`${senderName} opened the whiteboard`, {
+          description: "The whiteboard is now visible to everyone",
+          icon: "✏️",
+          duration: 4000,
+        });
+      }
+    };
+    window.addEventListener("whiteboard-state", handler);
+    return () => window.removeEventListener("whiteboard-state", handler);
+  }, [setWhiteboardOpen]);
 
   return (
     <>
