@@ -100,7 +100,7 @@ export function useWhiteboard(
     (ctx: CanvasRenderingContext2D, s: StrokeStyle) => {
       ctx.strokeStyle = s.tool === "eraser" ? "#ffffff" : s.color;
       ctx.fillStyle = s.tool === "eraser" ? "#ffffff" : s.color;
-      ctx.lineWidth = s.tool === "eraser" ? s.width * 3 : s.width;
+      ctx.lineWidth = s.tool === "eraser" ? s.width * 10 : s.width;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.globalCompositeOperation = "source-over"; // Always source-over, just draw white to erase
