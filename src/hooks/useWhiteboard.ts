@@ -53,7 +53,7 @@ export function useWhiteboard(
   publishData: (data: Uint8Array) => Promise<void>
 ) {
   const [tool, setTool] = useState<Tool>("pen");
-  const [color, setColor] = useState("#ffffff");
+  const [color, setColor] = useState("#000000"); // default black
   const [strokeWidth, setStrokeWidth] = useState(3);
 
   // local drawing state
@@ -98,13 +98,12 @@ export function useWhiteboard(
 
   const applyStyle = useCallback(
     (ctx: CanvasRenderingContext2D, s: StrokeStyle) => {
-      ctx.strokeStyle = s.tool === "eraser" ? "#1c1c1e" : s.color;
-      ctx.fillStyle = s.tool === "eraser" ? "#1c1c1e" : s.color;
+      ctx.strokeStyle = s.tool === "eraser" ? "#ffffff" : s.color;
+      ctx.fillStyle = s.tool === "eraser" ? "#ffffff" : s.color;
       ctx.lineWidth = s.tool === "eraser" ? s.width * 3 : s.width;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
-      ctx.globalCompositeOperation =
-        s.tool === "eraser" ? "destination-out" : "source-over";
+      ctx.globalCompositeOperation = "source-over"; // Always source-over, just draw white to erase
     },
     []
   );

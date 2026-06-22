@@ -24,9 +24,9 @@ import { useWhiteboard, type Tool, type WhiteboardEvent } from "@/hooks/useWhite
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const PRESET_COLORS = [
-  "#ffffff", "#f87171", "#fb923c", "#facc15",
-  "#4ade80", "#60a5fa", "#c084fc", "#f472b6",
-  "#000000", "#52525b",
+  "#000000", "#ef4444", "#f97316", "#eab308",
+  "#22c55e", "#3b82f6", "#a855f7", "#ec4899",
+  "#71717a", "#ffffff",
 ];
 
 const TOOLS: { id: Tool; icon: React.ReactNode; label: string }[] = [
@@ -97,7 +97,7 @@ export function Whiteboard({ isAdmin, onClose }: WhiteboardProps) {
   useEffect(() => {
     const ctx = baseCanvasRef.current?.getContext("2d");
     if (!ctx) return;
-    ctx.fillStyle = "#1c1c1e";
+    ctx.fillStyle = "#ffffff"; // White background
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   }, []);
 
@@ -153,7 +153,7 @@ export function Whiteboard({ isAdmin, onClose }: WhiteboardProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.25, ease: "easeOut" }}
-      className="absolute inset-0 z-40 flex flex-col bg-[#1c1c1e] overflow-hidden"
+      className="absolute inset-0 z-40 flex flex-col bg-white overflow-hidden"
     >
       {/* ── Top Toolbar ──────────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-zinc-900/95 backdrop-blur border-b border-white/5 shadow-lg flex-wrap">
@@ -303,7 +303,7 @@ export function Whiteboard({ isAdmin, onClose }: WhiteboardProps) {
       {/* ── Canvas Area ──────────────────────────────────────────────────────── */}
       <div
         ref={containerRef}
-        className="flex-1 relative overflow-hidden flex items-center justify-center bg-zinc-950"
+        className="flex-1 relative overflow-hidden flex items-center justify-center bg-white"
         onClick={() => setShowPalette(false)}
       >
         {/* Shadow wrapper */}
