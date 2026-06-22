@@ -73,21 +73,25 @@ export const POST = withSecurity(async (req, user) => {
         output,
       });
 
-      const egress = await egressClient.startRoomCompositeEgress(
-        roomName,
-        {
-          file: fileOutput,
-        },
-        {
-          audioOnly: true,
-        }
-      );
+      try {
+        const egress = await egressClient.startRoomCompositeEgress(
+          roomName,
+          {
+            file: fileOutput,
+          },
+          {
+            audioOnly: true,
+          }
+        );
 
-      return NextResponse.json({
-        success: true,
-        egressId: egress.egressId,
-        status: egress.status,
-      });
+        return NextResponse.json({
+          success: true,
+          egressId: egress.egressId,
+          status: egress.status,
+        });
+      } catch (e: any) {
+        return NextResponse.json({ error: e.message || "Failed to start recording" }, { status: 400 });
+      }
     }
 
     // ── STOP ───────────────────────────────────────────────────────────────
@@ -99,12 +103,16 @@ export const POST = withSecurity(async (req, user) => {
         );
       }
 
-      const egress = await egressClient.stopEgress(egressId);
+      try {
+        const egress = await egressClient.stopEgress(egressId);
 
-      return NextResponse.json({
-        success: true,
-        status: egress.status,
-      });
+        return NextResponse.json({
+          success: true,
+          status: egress.status,
+        });
+      } catch (e: any) {
+        return NextResponse.json({ error: e.message || "Failed to stop recording" }, { status: 400 });
+      }
     }
 
     return NextResponse.json({ error: "Invalid action" }, { status: 400 });
