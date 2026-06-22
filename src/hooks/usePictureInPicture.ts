@@ -118,6 +118,16 @@ export function usePictureInPicture() {
             setIsPipActive(true);
             setPipMode("video");
             toast.info("You can now switch to another app.", { duration: 5000, icon: "📱" });
+            
+            const handleWebKitExit = () => {
+              if ((bestVideo as any).webkitPresentationMode === "inline") {
+                setIsPipActive(false); 
+                setPipMode(null);
+                bestVideo.removeEventListener("webkitpresentationmodechanged", handleWebKitExit);
+              }
+            };
+            bestVideo.addEventListener("webkitpresentationmodechanged", handleWebKitExit);
+            
             isEnteringRef.current = false;
             return true;
           } catch (err) {

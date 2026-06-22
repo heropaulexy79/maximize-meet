@@ -43,10 +43,16 @@ export function useWakeLock(enabled: boolean = true) {
         audio.volume = 0.001; 
         audioRef.current = audio;
       }
-      await audioRef.current.play();
+      
+      // Safari requires a user gesture. If we fail here, it's okay, we'll try again on next visibility change
+      // which is often triggered by user interaction.
+      await audioRef.current.play().catch(err => {
+        console.warn("[WakeLock] Audio play blocked by browser (gesture needed):", err);
+        // Don't set isActiveRef.current to false here, so we can try again later
+      });
       console.log("[WakeLock] Audio persistence active.");
     } catch (err) {
-      console.warn("[WakeLock] Audio persistence failed (interaction required):", err);
+      console.warn("[WakeLock] Audio persistence failed totally:", err);
       isActiveRef.current = false;
     }
 

@@ -56,7 +56,8 @@ import {
   AlertCircle,
   Power,
   Minimize2,
-  ExternalLink
+  ExternalLink,
+  PenLine,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -79,6 +80,7 @@ import { ParticipantsSidebar } from "@/components/room/ParticipantsSidebar";
 import { ChatSidebar } from "@/components/room/ChatSidebar";
 import { InteractionsSidebar } from "@/components/room/InteractionsSidebar";
 import { MeetingGrid } from "@/components/room/MeetingGrid";
+import { Whiteboard } from "@/components/room/Whiteboard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -152,6 +154,12 @@ function RoomEventsListener({ onRecordingChange }: { onRecordingChange: (rec: bo
             detail: { emoji: data.emoji, identity: participant.identity } 
           }));
         }
+
+        if (data.category === "whiteboard") {
+          window.dispatchEvent(new CustomEvent("whiteboard-data", {
+            detail: { ...data, senderIdentity: participant.identity }
+          }));
+        }
       } catch (e) {
         console.error("Error parsing room data:", e);
       }
@@ -207,6 +215,8 @@ function CustomControlDock({
   isPipActive,
   onTogglePip,
   onMinimize,
+  whiteboardOpen,
+  setWhiteboardOpen,
 }: any) {
   const room = useRoomContext();
   const { isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
@@ -296,6 +306,10 @@ function CustomControlDock({
                   <Hand className={cn("w-4 h-4", isHandRaised ? "text-amber-500" : "text-primary")} />
                   <span className="font-medium">{isHandRaised ? "Lower Hand" : "Raise Hand"}</span>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setWhiteboardOpen(!whiteboardOpen)} className={cn("flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer", whiteboardOpen && "bg-primary/10")}>
+                  <PenLine className={cn("w-4 h-4", whiteboardOpen ? "text-primary" : "text-primary/60")} />
+                  <span className="font-medium">Whiteboard</span>
+                </DropdownMenuItem>
 
                 <Separator className="bg-white/10" />
 
@@ -362,6 +376,14 @@ function CustomControlDock({
 
       {/* Sidebars Controls - Right Wing (Desktop Only) */}
       <div className="flex-1 hidden sm:flex items-center justify-end gap-1.5 md:gap-2 relative">
+        {/* Whiteboard Toggle */}
+        <Button variant="ghost" onClick={() => setWhiteboardOpen(!whiteboardOpen)} className={cn(
+          "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+          whiteboardOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
+        )}>
+          <PenLine className="w-5 h-5" />
+        </Button>
+
         <Button variant="ghost" onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)} className={cn(
           "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
           participantsSidebarOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
@@ -569,6 +591,7 @@ export default function RoomPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
   const [meetingTitle, setMeetingTitle] = useState("");
+  const [whiteboardOpen, setWhiteboardOpen] = useState(false);
 
   useEffect(() => {
     const fetchSessionInfo = async () => {
@@ -672,10 +695,15 @@ export default function RoomPage() {
     <div className="h-screen w-full bg-black flex flex-col items-center justify-center gap-6">
       <GuestNameDialog open={showNameEntry} onJoin={(name) => setGuestName(name)} onRequestWakeLock={() => requestWakeLock().catch(() => {})} />
       {!showNameEntry && (
-        <>
+        <div className="flex flex-col items-center gap-6 max-w-sm px-6 text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin shadow-[0_0_20px_rgba(59,130,246,0.3)]" />
-          <p className="text-zinc-500 font-medium animate-pulse tracking-widest uppercase text-xs">Establishing Secure Connection...</p>
-        </>
+          <div className="space-y-2">
+            <p className="text-zinc-500 font-medium animate-pulse tracking-widest uppercase text-xs">Establishing Secure Connection...</p>
+            <p className="text-[10px] text-zinc-600 font-medium">
+              If this takes too long on Safari or Edge, try refreshing the page or checking your microphone permissions.
+            </p>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -725,6 +753,8 @@ export default function RoomPage() {
           leaveOpen={leaveOpen}
           setLeaveOpen={setLeaveOpen}
           handleEndForAll={handleEndForAll}
+          whiteboardOpen={whiteboardOpen}
+          setWhiteboardOpen={setWhiteboardOpen}
         />
       </LiveKitRoom>
     </div>
@@ -736,7 +766,8 @@ function RoomContent({
   user, roomId, firebaseAdmin, isRecording, setIsRecording, meetingTitle,
   layout, setLayout, chatOpen, setChatOpen, participantsSidebarOpen, setParticipantsSidebarOpen,
   interactionsOpen, setInteractionsOpen, unreadChat, setUnreadChat, lastMessage, setLastMessage,
-  isHandRaised, setIsHandRaised, inviteOpen, setInviteOpen, leaveOpen, setLeaveOpen, handleEndForAll
+  isHandRaised, setIsHandRaised, inviteOpen, setInviteOpen, leaveOpen, setLeaveOpen, handleEndForAll,
+  whiteboardOpen, setWhiteboardOpen
 }: any) {
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled } = useLocalParticipant();
   const room = useRoomContext();
@@ -758,6 +789,16 @@ function RoomContent({
       <div className="flex-1 flex overflow-hidden relative">
         <div className="flex-1 flex flex-col min-w-0 relative">
           <MeetingGrid layout={layout} />
+
+          {/* Whiteboard Overlay */}
+          <AnimatePresence>
+            {whiteboardOpen && (
+              <Whiteboard
+                isAdmin={isAdmin}
+                onClose={() => setWhiteboardOpen(false)}
+              />
+            )}
+          </AnimatePresence>
           
           {/* Shrunk State Overlay - Desktop Document PiP only */}
           <AnimatePresence>
@@ -847,6 +888,8 @@ function RoomContent({
           isPipActive={isPipActive}
           onTogglePip={() => togglePip()}
           onMinimize={() => togglePip()}
+          whiteboardOpen={whiteboardOpen}
+          setWhiteboardOpen={setWhiteboardOpen}
         />
       </div>
 
@@ -942,6 +985,8 @@ function RoomContextWrapper({
   isPipActive,
   onTogglePip,
   onMinimize,
+  whiteboardOpen,
+  setWhiteboardOpen,
 }: any) {
   const room = useRoomContext();
   
@@ -1079,6 +1124,8 @@ function RoomContextWrapper({
       isPipActive={isPipActive}
       onTogglePip={onTogglePip}
       onMinimize={onMinimize}
+      whiteboardOpen={whiteboardOpen}
+      setWhiteboardOpen={setWhiteboardOpen}
     />
   );
 }
