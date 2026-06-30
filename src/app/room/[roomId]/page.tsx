@@ -314,10 +314,12 @@ function CustomControlDock({
                   <Hand className={cn("w-4 h-4", isHandRaised ? "text-amber-500" : "text-primary")} />
                   <span className="font-medium">{isHandRaised ? "Lower Hand" : "Raise Hand"}</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setWhiteboardOpen(!whiteboardOpen)} className={cn("flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer", whiteboardOpen && "bg-primary/10")}>
-                  <PenLine className={cn("w-4 h-4", whiteboardOpen ? "text-primary" : "text-primary/60")} />
-                  <span className="font-medium">Whiteboard</span>
-                </DropdownMenuItem>
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => setWhiteboardOpen(!whiteboardOpen)} className={cn("flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 text-white cursor-pointer", whiteboardOpen && "bg-primary/10")}>
+                    <PenLine className={cn("w-4 h-4", whiteboardOpen ? "text-primary" : "text-primary/60")} />
+                    <span className="font-medium">Whiteboard</span>
+                  </DropdownMenuItem>
+                )}
 
                 <Separator className="bg-white/10" />
 
@@ -385,12 +387,14 @@ function CustomControlDock({
       {/* Sidebars Controls - Right Wing (Desktop Only) */}
       <div className="flex-1 hidden sm:flex items-center justify-end gap-1.5 md:gap-2 relative">
         {/* Whiteboard Toggle */}
-        <Button variant="ghost" onClick={() => setWhiteboardOpen(!whiteboardOpen)} className={cn(
-          "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
-          whiteboardOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
-        )}>
-          <PenLine className="w-5 h-5" />
-        </Button>
+        {isAdmin && (
+          <Button variant="ghost" onClick={() => setWhiteboardOpen(!whiteboardOpen)} className={cn(
+            "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",
+            whiteboardOpen ? "bg-primary/20 border-primary/50 text-primary" : "bg-transparent border-transparent text-white/60 hover:text-white"
+          )}>
+            <PenLine className="w-5 h-5" />
+          </Button>
+        )}
 
         <Button variant="ghost" onClick={() => setParticipantsSidebarOpen(!participantsSidebarOpen)} className={cn(
           "w-11 h-11 md:w-12 md:h-12 rounded-xl border transition-all duration-300",

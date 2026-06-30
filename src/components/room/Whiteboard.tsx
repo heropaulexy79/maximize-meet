@@ -157,8 +157,10 @@ export function Whiteboard({ isAdmin, onClose }: WhiteboardProps) {
     >
       {/* ── Top Toolbar ──────────────────────────────────────────────────────── */}
       <div className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-zinc-900/95 backdrop-blur border-b border-white/5 shadow-lg flex-wrap">
-        {/* Tools */}
-        <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+        {isAdmin ? (
+          <>
+            {/* Tools */}
+            <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
           {TOOLS.map((t) => (
             <button
               key={t.id}
@@ -284,11 +286,28 @@ export function Whiteboard({ isAdmin, onClose }: WhiteboardProps) {
         >
           <Download className="w-4 h-4" />
         </button>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 text-white/50 text-xs font-bold uppercase tracking-widest bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              Admin is Drawing
+            </div>
+            
+            <button
+              title="Download as PNG"
+              onClick={wb.downloadPNG}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-all ml-2"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+          </>
+        )}
 
         {/* Current color preview + label — right side */}
         <div className="ml-auto flex items-center gap-3">
           <span className="hidden sm:block text-[10px] text-white/30 uppercase tracking-widest font-bold">
-            Whiteboard
+            Whiteboard {!isAdmin && "(Read Only)"}
           </span>
           <button
             onClick={onClose}
@@ -322,11 +341,11 @@ export function Whiteboard({ isAdmin, onClose }: WhiteboardProps) {
             ref={activeCanvasRef}
             width={CANVAS_WIDTH}
             height={CANVAS_HEIGHT}
-            className={cn("absolute inset-0 w-full h-full", cursorStyle)}
+            className={cn("absolute inset-0 w-full h-full", isAdmin ? cursorStyle : "cursor-default")}
             style={{ imageRendering: "auto" }}
-            onPointerDown={wb.tool === "text" ? handleCanvasClick : wb.handlePointerDown}
-            onPointerMove={wb.tool !== "text" ? wb.handlePointerMove : undefined}
-            onPointerUp={wb.tool !== "text" ? wb.handlePointerUp : undefined}
+            onPointerDown={isAdmin ? (wb.tool === "text" ? handleCanvasClick : wb.handlePointerDown) : undefined}
+            onPointerMove={isAdmin && wb.tool !== "text" ? wb.handlePointerMove : undefined}
+            onPointerUp={isAdmin && wb.tool !== "text" ? wb.handlePointerUp : undefined}
           />
         </div>
 
@@ -374,11 +393,13 @@ export function Whiteboard({ isAdmin, onClose }: WhiteboardProps) {
       </div>
 
       {/* ── Mobile bottom tool hint ──────────────────────────────────────────── */}
-      <div className="sm:hidden flex items-center justify-center py-2 bg-zinc-900/80 border-t border-white/5">
-        <span className="text-[10px] text-white/30 uppercase tracking-widest">
-          {TOOLS.find((t) => t.id === wb.tool)?.label} · tap &amp; draw
-        </span>
-      </div>
+      {isAdmin && (
+        <div className="sm:hidden flex items-center justify-center py-2 bg-zinc-900/80 border-t border-white/5">
+          <span className="text-[10px] text-white/30 uppercase tracking-widest">
+            {TOOLS.find((t) => t.id === wb.tool)?.label} · tap &amp; draw
+          </span>
+        </div>
+      )}
     </motion.div>
   );
 }
