@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.googletagmanager.com https://maximize-meet.firebaseapp.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.livekit.cloud wss://*.livekit.cloud https://*.firebaseapp.com https://*.r2.cloudflarestorage.com; frame-src 'self' https://maximize-meet.firebaseapp.com https://*.firebaseapp.com; child-src 'self' https://maximize-meet.firebaseapp.com https://*.firebaseapp.com; media-src 'self' https://*.r2.cloudflarestorage.com https://*.r2.dev;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.googletagmanager.com https://maximize-meet.firebaseapp.com https://*.firebaseio.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://*.livekit.cloud wss://*.livekit.cloud https://*.firebaseapp.com https://*.r2.cloudflarestorage.com; frame-src 'self' https://maximize-meet.firebaseapp.com https://*.firebaseapp.com; child-src 'self' blob: https://maximize-meet.firebaseapp.com https://*.firebaseapp.com; media-src 'self' blob: https://*.r2.cloudflarestorage.com https://*.r2.dev;",
           },
           {
             key: "Cross-Origin-Opener-Policy",

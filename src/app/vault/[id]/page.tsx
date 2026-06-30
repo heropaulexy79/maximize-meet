@@ -74,18 +74,24 @@ export default function SessionDetailPage() {
           setSession(data);
           
           if (data.fileUrl) {
-            const idToken = await user.getIdToken();
-            const res = await fetch("/api/vault/sign", {
-              method: "POST",
-              headers: { 
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${idToken}`
-              },
-              // Send the raw fileUrl; the backend sanitizer handles path normalization
-              body: JSON.stringify({ fileKey: data.fileUrl })
-            });
-            const { url } = await res.json();
-            setSignedUrl(url);
+            // Use the same sanitize logic as the main vault page
+            let fileUrl = data.fileUrl;
+            const privateHost = "0d71f8982a04d4b7325afa19bc44654c.r2.cloudflarestorage.com";
+            const publicHost = "pub-15e730edd35642e49c44f19e4bdaf5b6.r2.dev";
+
+            const nestedProtoMatch = fileUrl.match(/^(?:https?:\/\/)?[^/]+\.https?:\/\/(.+)/);
+            if (nestedProtoMatch) {
+              fileUrl = `https://${nestedProtoMatch[1]}`;
+            }
+
+            if (fileUrl.includes(privateHost)) {
+              let clean = fileUrl.replace(/^https?:\/\//, "");
+              const hostRegex = new RegExp(`([^/]+\\.)?${privateHost.replace(/\./g, "\\.")}`);
+              clean = clean.replace(hostRegex, publicHost);
+              fileUrl = `https://${clean}`;
+            }
+            
+            setSignedUrl(fileUrl);
           }
         }
       } catch (error) {

@@ -725,6 +725,7 @@ export default function RoomPage() {
         options={{
           publishDefaults: {
             videoCodec: 'h264',
+            stopMicTrackOnMute: false,
           },
           adaptiveStream: true,
           dynacast: true,
