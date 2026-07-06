@@ -44,7 +44,8 @@ export async function checkRoomAccess(uid: string, roomId: string, role: string)
 
   // Check if session exists and user is part of the cohort or allowed participants
   const sessionSnap = await adminDb.collection("sessions").where("roomId", "==", roomId).get();
-  if (sessionSnap.empty) return false;
+  // Allow access to ad-hoc rooms (guests already bypass this, so authenticated users should too)
+  if (sessionSnap.empty) return true;
 
   // If session is public or has no restrictions, allow. 
   const session = sessionSnap.docs[0].data();
